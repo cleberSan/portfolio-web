@@ -12,17 +12,17 @@ const post: Post = {
 };
 
 describe("buildRobots", () => {
-  it("bloqueia rastreamento quando o endereço público não foi configurado", () => {
+  it("bloqueia rastreamento fora da produção", () => {
     // Act
-    const robots = buildRobots({ url: new URL("http://localhost:3000"), configured: false });
+    const robots = buildRobots({ url: new URL("http://localhost:3000"), indexable: false });
 
     // Assert
     expect(robots).toEqual({ rules: { userAgent: "*", disallow: "/" } });
   });
 
-  it("libera rastreamento e aponta o sitemap quando configurado", () => {
+  it("libera rastreamento e aponta o sitemap em produção", () => {
     // Act
-    const robots = buildRobots({ url: new URL("https://cleber.dev"), configured: true });
+    const robots = buildRobots({ url: new URL("https://cleber.dev"), indexable: true });
 
     // Assert
     expect(robots.rules).toEqual({ userAgent: "*", allow: "/" });

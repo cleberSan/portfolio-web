@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { siteOgAlt } from "@/components/og-card";
 import { site } from "@/config/site";
 import { pageMetadata } from "./metadata";
 
@@ -26,6 +27,24 @@ describe("pageMetadata", () => {
       title: "Stack",
     });
     expect(metadata.twitter).toMatchObject({ card: "summary_large_image" });
+  });
+
+  it("repete a imagem padrão do site, que o Open Graph da página descartaria", () => {
+    // Arrange
+    const expectedImage = {
+      url: "/opengraph-image",
+      width: 1200,
+      height: 630,
+      alt: siteOgAlt,
+      type: "image/png",
+    };
+
+    // Act
+    const metadata = pageMetadata({ title: "Sobre", description: "Quem sou", path: "/sobre" });
+
+    // Assert
+    expect(metadata.openGraph?.images).toEqual([expectedImage]);
+    expect(metadata.twitter?.images).toEqual([expectedImage]);
   });
 
   it("usa título absoluto quando pedido", () => {
@@ -57,5 +76,19 @@ describe("pageMetadata", () => {
       authors: [site.name],
       tags: ["PostgreSQL"],
     });
+  });
+
+  it("deixa a imagem dos posts para o arquivo opengraph-image do segmento", () => {
+    // Act
+    const metadata = pageMetadata({
+      title: "Post",
+      description: "Resumo",
+      path: "/diario/post",
+      article: { publishedTime: "2026-10-14", tags: [] },
+    });
+
+    // Assert
+    expect(metadata.openGraph?.images).toBeUndefined();
+    expect(metadata.twitter?.images).toBeUndefined();
   });
 });

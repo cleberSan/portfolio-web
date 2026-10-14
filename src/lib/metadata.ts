@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { ogSize, siteOgAlt } from "@/components/og-card";
 import { site } from "@/config/site";
 
 type PageMetadataInput = {
@@ -12,8 +13,16 @@ type PageMetadataInput = {
 };
 
 /**
+ * Imagem gerada por `src/app/opengraph-image.tsx`. Ela só é aplicada sozinha na home; nas
+ * demais páginas o `openGraph` da própria página a descarta, então o helper a repete.
+ */
+const siteOgImage = { url: "/opengraph-image", ...ogSize, alt: siteOgAlt, type: "image/png" };
+
+/**
  * O Next.js substitui (não mescla) o objeto `openGraph` do layout quando a página define
  * o seu. Este helper monta sempre o conjunto completo para nenhuma página perder campos.
+ * Posts não recebem a imagem padrão: a imagem própria de cada um vem do arquivo
+ * `opengraph-image.tsx` do segmento, que tem prioridade sobre a configuração.
  */
 export function pageMetadata({
   title,
@@ -42,7 +51,9 @@ export function pageMetadata({
           authors: [site.name],
           tags: [...article.tags],
         }
-      : { ...shared, type: "website" },
-    twitter: { card: "summary_large_image", title, description },
+      : { ...shared, type: "website", images: [siteOgImage] },
+    twitter: article
+      ? { card: "summary_large_image", title, description }
+      : { card: "summary_large_image", title, description, images: [siteOgImage] },
   };
 }

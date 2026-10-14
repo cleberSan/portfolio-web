@@ -25,6 +25,10 @@ Construído com Next.js 16, TypeScript e Tailwind CSS. O projeto vitrine é o [C
 - Testes de unidade com Vitest (mínimo de 80% de cobertura no CI) e E2E com Playwright em desktop e mobile, incluindo axe (WCAG 2.2 AA) nos temas claro e escuro.
 - SEO: metadados e Open Graph por página, imagens Open Graph geradas no build, sitemap, robots e dados estruturados (schema.org).
 
+## Publicação
+
+Hospedado na Vercel: merge no `main` publica em produção e cada PR ganha um preview fora dos buscadores ([ADR-0005](docs/adr/0005-hospedagem-na-vercel.md)). O passo a passo está em [CONTRIBUTING.md](CONTRIBUTING.md#deploy).
+
 ## Roadmap
 
 - [x] **Fase 0:** padrões do repositório, CI com qualidade e segurança, cabeçalhos de segurança, ADRs

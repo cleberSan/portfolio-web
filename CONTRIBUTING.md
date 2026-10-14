@@ -24,11 +24,32 @@ Antes do primeiro `test:e2e`, instale o navegador com `npx playwright install ch
 
 ## Variáveis de ambiente
 
-| Variável   | Uso                                                                                                                                           | Padrão                                                       |
-| ---------- | --------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
-| `SITE_URL` | Origem pública do site (ex.: `https://exemplo.dev`), usada em URLs canônicas, sitemap e Open Graph. Precisa ser `https`, exceto em localhost. | `http://localhost:3000`, e o `robots.txt` bloqueia indexação |
+Nenhuma variável é obrigatória. Na Vercel, o site descobre o próprio endereço pelas variáveis de sistema que ela preenche.
+
+| Variável                                       | Uso                                                                                                                                                                          | Sem ela                                                                    |
+| ---------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
+| `SITE_URL`                                     | Origem pública (ex.: `https://exemplo.dev`) para URLs canônicas, sitemap e Open Graph. Precisa ser `https`, exceto em localhost. Tem prioridade sobre a detecção automática. | Usa o domínio de produção da Vercel ou, fora dela, `http://localhost:3000` |
+| `VERCEL_ENV` e `VERCEL_PROJECT_PRODUCTION_URL` | Preenchidas pela Vercel. Só a produção libera indexação; previews apontam canônicas para produção e bloqueiam rastreamento.                                                  | O `robots.txt` bloqueia indexação                                          |
 
 Nenhuma variável do site é secreta. Não use o prefixo `NEXT_PUBLIC_` para nada sensível: ele vai para o navegador.
+
+## Deploy
+
+O site é publicado na Vercel pela integração com o GitHub ([ADR-0005](docs/adr/0005-hospedagem-na-vercel.md)):
+
+- Merge no `main` publica em produção.
+- Cada PR ganha uma URL de preview, fora dos buscadores e aberta só para quem está logado na conta da Vercel.
+- Para voltar uma versão, promova a publicação anterior no painel da Vercel.
+- Comandos e versão do Node vêm do repositório (`vercel.json` e `engines` no `package.json`), iguais aos do CI.
+
+Configuração inicial, feita uma vez pelo dono do repositório:
+
+1. Em [vercel.com/new](https://vercel.com/new), entre com o GitHub e importe `cleberSan/portfolio-web`. Ao instalar o app da Vercel no GitHub, escolha **Only select repositories** e marque só este repositório.
+2. Não altere preset, comandos nem variáveis: o `vercel.json` já define tudo.
+3. Clique em **Deploy**.
+4. No GitHub, em **Settings → Branches**, proteja o `main` exigindo PR e os checks `Lint, tipos, testes e build`, `Revisão de dependências` e `CodeQL`. A Vercel publica tudo que chega ao `main`, então é essa regra que garante que só código testado vai ao ar.
+
+Domínio próprio é opcional: adicione em **Settings → Domains** na Vercel. O HSTS do site usa `includeSubDomains; preload`, então todo subdomínio desse domínio precisa servir HTTPS.
 
 ## Novo post no diário
 
