@@ -8,7 +8,7 @@ describe("ExternalLink", () => {
     render(<ExternalLink href="https://github.com/cleberSan">GitHub</ExternalLink>);
 
     // Act
-    const link = screen.getByRole("link", { name: "GitHub" });
+    const link = screen.getByRole("link", { name: /^GitHub/ });
 
     // Assert
     expect(link).toHaveAttribute("href", "https://github.com/cleberSan");
@@ -16,7 +16,18 @@ describe("ExternalLink", () => {
     expect(link).toHaveAttribute("rel", "noopener noreferrer");
   });
 
-  it.each(["javascript:alert(1)", "http://example.com", "/interno", ""])(
+  it("avisa leitores de tela que abre em nova aba", () => {
+    // Arrange
+    render(<ExternalLink href="https://github.com/cleberSan">GitHub</ExternalLink>);
+
+    // Act
+    const link = screen.getByRole("link");
+
+    // Assert
+    expect(link).toHaveAccessibleName("GitHub, abre em nova aba");
+  });
+
+  it.each(["javascript:alert(1)", "http://example.com", "/interno", "//example.com", ""])(
     "rejeita a URL %j",
     (href) => {
       // Act
@@ -36,7 +47,7 @@ describe("ExternalLink", () => {
     );
 
     // Act
-    const link = screen.getByRole("link", { name: "Exemplo" });
+    const link = screen.getByRole("link", { name: /^Exemplo/ });
 
     // Assert
     expect(link).toHaveClass("underline");

@@ -1,0 +1,95 @@
+## O problema
+
+Dois pacientes tentam marcar o mesmo horário com a mesma profissional, no mesmo segundo. A API roda em várias réplicas. Um aplicativo móvel perde a conexão depois de enviar a reserva e tenta de novo. Em nenhum desses casos a agenda pode terminar com duas consultas sobrepostas, nem com a mesma consulta criada duas vezes.
+
+Esse é o primeiro serviço do CareFlow, e foi escolhido de propósito: é onde a consistência deixa de ser teoria.
+
+## Por que checar antes de inserir não funciona
+
+A solução intuitiva é consultar se o horário está livre e, se estiver, inserir. Entre a consulta e a inserção existe uma janela em que outra requisição faz exatamente a mesma coisa. As duas encontram o horário livre, as duas inserem. É o clássico TOCTOU (time-of-check to time-of-use), e um lock em memória não resolve, porque cada réplica tem a sua.
+
+## A garantia fica no banco
+
+O PostgreSQL resolve isso com uma _exclusion constraint_: o banco recusa qualquer linha cujo intervalo se sobreponha a outro já existente para a mesma clínica e o mesmo profissional.
+
+```sql
+ALTER TABLE appointments ADD CONSTRAINT ex_appointments_no_overlap
+  EXCLUDE USING gist (
+    tenant_id WITH =,
+    professional_id WITH =,
+    tstzrange(starts_at, ends_at, '[)') WITH &&
+  )
+  WHERE (status = 'Booked');
+```
+
+Três detalhes fazem diferença:
+
+- O intervalo é semiaberto (`[)`): uma consulta das 9h às 9h30 não conflita com outra das 9h30 às 10h.
+- O filtro `WHERE` faz consultas canceladas liberarem o horário.
+- A extensão `btree_gist` permite comparar igualdade de `tenant_id` e `professional_id` no mesmo índice GiST que compara os intervalos.
+
+A API não faz consulta prévia. Ela tenta inserir e, se o banco recusar com o erro `23P01`, responde `409` com o código estável `Agenda.HorarioIndisponivel`. A regra vale para qualquer cliente do banco, inclusive scripts e serviços futuros que nem passam pela API. O raciocínio completo está no [ADR-0002 do CareFlow](https://github.com/cleberSan/careflow/blob/main/docs/adr/0002-agenda-sem-dupla-reserva.md).
+
+## Repetir sem duplicar
+
+Toda criação de consulta exige o cabeçalho `Idempotency-Key`. A chave e um hash SHA-256 do conteúdo da requisição ficam gravados na própria consulta, com índice único por clínica:
+
+- Mesma chave e mesmo conteúdo: a API devolve a consulta original, com `Idempotent-Replayed: true`.
+- Mesma chave e conteúdo diferente: `409 Idempotencia.ChaveReutilizada`, porque provavelmente é um bug no cliente.
+
+Por isso o `SaveChanges` não tem retry automático. Se um commit ficar ambíguo (o banco gravou, mas a resposta se perdeu), repetir no servidor poderia duplicar efeitos. A retentativa segura é a do cliente, protegida pela chave.
+
+## O bug que o teste de concorrência encontrou
+
+Um dos testes de integração dispara dez retentativas simultâneas com a mesma chave e exige que todas devolvam a mesma consulta. Na primeira execução, algumas voltaram com `409 Agenda.HorarioIndisponivel`.
+
+A causa: retentativas com a mesma chave também disputam o mesmo horário. Quando duas chegam juntas, a _exclusion constraint_ pode disparar antes do índice único de idempotência, e a requisição perdedora via um conflito de horário em vez de um replay. A correção foi tratar esse caso explicitamente:
+
+```csharp
+catch (DbUpdateException ex) when (ex.IsExclusionViolation(AppointmentConfiguration.NoOverlapConstraint))
+{
+    db.Entry(appointment).State = EntityState.Detached;
+
+    // Se a vencedora foi uma requisição com esta chave, é um replay, não um conflito.
+    var sameKey = await FindByIdempotencyKeyAsync(idempotencyKey, cancellationToken);
+    if (sameKey is not null)
+    {
+        return Replay(sameKey, fingerprint);
+    }
+
+    metrics.Conflict();
+    return AppointmentErrors.SlotUnavailable;
+}
+```
+
+Esse bug não aparece em teste de unidade nem em teste com banco em memória. Ele só existe com concorrência real contra um PostgreSQL real, que é como os testes de integração rodam, com Testcontainers.
+
+## Um detalhe de precisão de tempo
+
+Outro teste comparava a consulta criada com a mesma consulta lida depois, e as datas de criação não batiam. O `DateTimeOffset` do .NET tem precisão de 100 nanossegundos; o `timestamptz` do PostgreSQL, de microssegundos. O domínio passou a truncar os carimbos de tempo para microssegundos, para que criação, leitura e replay devolvam exatamente os mesmos valores.
+
+## Isolamento entre clínicas
+
+A clínica vem da claim `tenant_id` do token JWT, e um filtro global do EF Core restringe toda leitura à clínica atual. Pedir a consulta de outra clínica pelo id devolve `404`, e não `403`, para não confirmar que o recurso existe. Sem uma claim válida, a requisição é recusada antes de chegar ao handler. Row-Level Security no banco entra na fase 3, junto com o cofre de dados do paciente.
+
+O serviço também pratica minimização de dados: o paciente é só um pseudônimo, a listagem da agenda mostra horários ocupados sem dizer de quem, e logs e métricas não carregam a referência do paciente.
+
+## Como foi testado
+
+- **Unidade (28 testes):** regras do domínio, como intervalo inválido, horário fora do minuto exato, duração fora da política, início no passado e cancelamento de consulta já iniciada.
+- **Integração (39 testes):** API completa contra PostgreSQL real, incluindo 20 reservas simultâneas do mesmo horário com exatamente uma vencedora, 10 retentativas simultâneas com a mesma chave, acesso entre clínicas e escopos de autorização.
+- **Portão no CI:** cobertura mínima de 80% por projeto; a API fechou a fase com 95% de linhas cobertas.
+
+## Observabilidade
+
+Traces do ASP.NET Core e do Npgsql via OpenTelemetry, e métricas de negócio próprias: consultas reservadas, conflitos de horário, replays de idempotência e cancelamentos. São esses números que vão alimentar o Painel de Privacidade e Resiliência na fase 6.
+
+## Trade-offs aceitos
+
+- A garantia depende de um recurso do PostgreSQL. Trocar de banco exigiria outra estratégia, e isso está registrado.
+- O cadastro de profissionais ainda não existe: qualquer profissional é aceito dentro da clínica até o catálogo entrar no roadmap.
+- Migrations rodam na subida só em desenvolvimento e testes; em produção, serão uma etapa do pipeline de deploy.
+
+## Próximo passo
+
+A fase 3 traz o cofre de dados do paciente, com cifragem por campo, chave por clínica e Row-Level Security no banco. Antes dela, a [fase 0](/diario/fase-0-fundacao) conta como a base de qualidade foi montada.
