@@ -1,4 +1,5 @@
 import { expect, test } from "./fixtures";
+import { allPages } from "./routes";
 
 test.describe("cabeçalhos de segurança", () => {
   test("a resposta HTML traz CSP, HSTS e demais proteções, sem X-Powered-By", async ({
@@ -43,9 +44,7 @@ test.describe("páginas inexistentes", () => {
 });
 
 test.describe("SEO", () => {
-  test("robots.txt bloqueia rastreamento enquanto SITE_URL não está configurada", async ({
-    request,
-  }) => {
+  test("robots.txt bloqueia rastreamento fora da produção", async ({ request }) => {
     // Act
     const body = await (await request.get("/robots.txt")).text();
 
@@ -81,6 +80,20 @@ test.describe("SEO", () => {
     expect(image.status()).toBe(200);
     expect(image.headers()["content-type"]).toBe("image/png");
   });
+
+  for (const path of allPages) {
+    test(`${path} publica uma imagem Open Graph que existe`, async ({ page, request }) => {
+      // Act
+      await page.goto(path);
+      const ogImage = await page.locator('meta[property="og:image"]').getAttribute("content");
+      const image = await request.get(new URL(ogImage ?? "", page.url()).pathname);
+
+      // Assert
+      expect(ogImage).toBeTruthy();
+      expect(image.status()).toBe(200);
+      expect(image.headers()["content-type"]).toBe("image/png");
+    });
+  }
 
   test("um post publica dados estruturados de BlogPosting", async ({ page }) => {
     // Act

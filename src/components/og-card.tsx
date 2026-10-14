@@ -2,6 +2,9 @@ import { site } from "@/config/site";
 
 export const ogSize = { width: 1200, height: 630 };
 
+/** Texto alternativo da imagem Open Graph padrão do site (`src/app/opengraph-image.tsx`). */
+export const siteOgAlt = `${site.name}, ${site.role}`;
+
 type OgCardProps = {
   eyebrow: string;
   title: string;

@@ -4,11 +4,11 @@ import type { Post } from "@/content/posts";
 import { parseIsoDate } from "./format-date";
 
 /**
- * Sem `SITE_URL` (ambientes de preview e CI), o site pede para não ser rastreado:
- * melhor não indexar do que indexar URLs canônicas apontando para localhost.
+ * Fora da produção (previews, CI, máquina local), o site pede para não ser rastreado:
+ * melhor não indexar do que indexar cópias ou URLs canônicas apontando para localhost.
  */
-export function buildRobots({ url, configured }: SiteUrl): MetadataRoute.Robots {
-  if (!configured) {
+export function buildRobots({ url, indexable }: SiteUrl): MetadataRoute.Robots {
+  if (!indexable) {
     return { rules: { userAgent: "*", disallow: "/" } };
   }
 
