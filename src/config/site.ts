@@ -10,8 +10,29 @@ export const site = {
     "Observabilidade com OpenTelemetry",
     "Segurança e privacidade por design",
   ],
+  sectors: ["Pagamentos digitais", "Fundos de investimento", "Saúde", "Previdência", "Educação"],
   links: {
     github: "https://github.com/cleberSan",
     careflow: "https://github.com/cleberSan/careflow",
+    source: "https://github.com/cleberSan/portfolio-web",
   },
 } as const;
+
+export type NavigationItem = { href: `/${string}`; label: string };
+
+export const navigation: readonly NavigationItem[] = [
+  { href: "/projetos", label: "Projetos" },
+  { href: "/diario", label: "Diário" },
+  { href: "/stack", label: "Stack" },
+  { href: "/sobre", label: "Sobre" },
+];
+
+/** Rotas sem parâmetros, usadas pelo sitemap e pelos testes E2E. */
+export const staticRoutes = [
+  "/",
+  "/projetos",
+  "/projetos/careflow",
+  "/diario",
+  "/stack",
+  "/sobre",
+] as const;

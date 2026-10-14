@@ -1,0 +1,53 @@
+import { describe, expect, it } from "vitest";
+import type { Post } from "@/content/posts";
+import { buildRobots, buildSitemap } from "./seo";
+
+const post: Post = {
+  slug: "um-post",
+  title: "Um post",
+  description: "Descrição",
+  publishedAt: "2026-10-14",
+  phase: 0,
+  tags: [],
+};
+
+describe("buildRobots", () => {
+  it("bloqueia rastreamento quando o endereço público não foi configurado", () => {
+    // Act
+    const robots = buildRobots({ url: new URL("http://localhost:3000"), configured: false });
+
+    // Assert
+    expect(robots).toEqual({ rules: { userAgent: "*", disallow: "/" } });
+  });
+
+  it("libera rastreamento e aponta o sitemap quando configurado", () => {
+    // Act
+    const robots = buildRobots({ url: new URL("https://cleber.dev"), configured: true });
+
+    // Assert
+    expect(robots.rules).toEqual({ userAgent: "*", allow: "/" });
+    expect(robots.sitemap).toBe("https://cleber.dev/sitemap.xml");
+  });
+});
+
+describe("buildSitemap", () => {
+  it("gera URLs absolutas para rotas fixas e posts", () => {
+    // Act
+    const sitemap = buildSitemap(new URL("https://cleber.dev"), ["/", "/sobre"], [post]);
+
+    // Assert
+    expect(sitemap.map((entry) => entry.url)).toEqual([
+      "https://cleber.dev/",
+      "https://cleber.dev/sobre",
+      "https://cleber.dev/diario/um-post",
+    ]);
+  });
+
+  it("usa a data de publicação como última modificação do post", () => {
+    // Act
+    const [entry] = buildSitemap(new URL("https://cleber.dev"), [], [post]);
+
+    // Assert
+    expect(entry.lastModified).toEqual(new Date("2026-10-14T00:00:00Z"));
+  });
+});

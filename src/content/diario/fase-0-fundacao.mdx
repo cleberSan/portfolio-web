@@ -1,0 +1,47 @@
+## Por que começar sem nenhuma regra de negócio
+
+O CareFlow existe para mostrar como eu construo sistemas críticos, e não só o resultado final. Por isso a primeira entrega não tem agenda, paciente ou consulta: tem um repositório que recusa, sozinho, código que piora a qualidade.
+
+Configurar isso depois, com o sistema já crescendo, custa mais caro e quase nunca acontece de verdade. Cada portão que entra na fase 0 passa a valer para todas as fases seguintes sem esforço extra.
+
+## Dois repositórios, um objetivo
+
+- [careflow](https://github.com/cleberSan/careflow): monorepo .NET 10 com `src/Services/*` (um serviço por contexto delimitado), `src/BuildingBlocks` (o mínimo compartilhado), `tests/*` e `docs/adr`.
+- [portfolio-web](https://github.com/cleberSan/portfolio-web): este site, em Next.js 16 com TypeScript estrito.
+
+Um repositório por serviço daria mais isolamento, mas para um projeto conduzido por uma pessoa o custo de coordenar versões e pipelines não se paga nesta fase. A decisão e as alternativas estão no [ADR-0001 do CareFlow](https://github.com/cleberSan/careflow/blob/main/docs/adr/0001-arquitetura-base.md).
+
+## Os portões de qualidade
+
+Cada item abaixo protege contra um tipo específico de problema:
+
+- **Avisos tratados como erro**, com analisadores `latest-recommended` e estilo verificado no build. Dívida técnica não entra em silêncio; ou se corrige, ou se justifica no `.editorconfig`.
+- **Cobertura mínima de 80%**, medida por projeto de teste. Um módulo bem testado não esconde outro sem teste nenhum.
+- **Versões centralizadas e lock files**, com restore travado no CI. O build usa exatamente as dependências que passaram por revisão.
+- **CodeQL** com o conjunto `security-extended`, para o código e para os próprios workflows do GitHub Actions.
+- **Revisão de dependências** em todo PR, bloqueando vulnerabilidades de severidade moderada ou maior e licenças incompatíveis.
+- **Workflows com privilégio mínimo**: token só de leitura e credenciais do checkout descartadas.
+
+## Erros de negócio sem exceptions
+
+Desde o primeiro commit, regras de negócio devolvem `Result` em vez de lançar exceptions. Exceptions ficam para erro de programação e falha de infraestrutura. Assim o fluxo de erro aparece na assinatura do método e vira ProblemDetails (RFC 9457) com um código estável, que o cliente pode tratar sem depender do texto da mensagem.
+
+```csharp
+// Domínio da agenda (fase 2): a regra devolve um erro tipado, sem exception.
+if (endsAt <= startsAt)
+{
+    return AppointmentErrors.InvalidInterval;
+}
+```
+
+## Decisões viram ADRs
+
+Toda decisão relevante vira um ADR curto com contexto, alternativas e consequências. O exemplo mais honesto da fase 0 é uma decisão de não bloquear: uma dependência transitiva da ferramenta de lint do Next.js tem um alerta de segurança sem correção disponível. Bloquear todo PR por isso não reduziria o risco do site publicado, porque ferramenta de lint não vai para o navegador. A revisão de dependências passou a bloquear só o escopo de produção, e o motivo ficou registrado no [ADR-0001 do site](https://github.com/cleberSan/portfolio-web/blob/main/docs/adr/0001-stack-e-qualidade.md).
+
+## O fluxo de trabalho
+
+Toda mudança entra por pull request, com CI verde e minha revisão antes do merge. O projeto é desenvolvido com o Claude Code como par de programação: o agente implementa e abre os PRs, e eu reviso, questiono e decido o que entra. A IA acelera a entrega; os portões de qualidade e a revisão humana garantem que acelerar não significa aceitar qualquer coisa.
+
+## Próximo passo
+
+Com a base pronta, a fase 2 trouxe a primeira regra crítica: [uma agenda multi-clínica que nunca aceita duas consultas no mesmo horário](/diario/fase-2-agenda-sem-dupla-reserva).

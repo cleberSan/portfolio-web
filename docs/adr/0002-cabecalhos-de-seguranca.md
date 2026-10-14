@@ -1,6 +1,6 @@
 # ADR-0002: Cabeçalhos de segurança e CSP
 
-- Status: aceito
+- Status: aceito; a política de `script-src` e `style-src` foi decidida no [ADR-0003](0003-csp-sem-nonce.md)
 - Data: 2026-10-14
 
 ## Contexto

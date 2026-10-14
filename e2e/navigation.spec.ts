@@ -1,0 +1,67 @@
+import { expect, test } from "./fixtures";
+
+test("o link de pular conteúdo é o primeiro foco e leva ao conteúdo principal", async ({
+  page,
+  browserName,
+}, testInfo) => {
+  test.skip(testInfo.project.name === "mobile", "Navegação por teclado é testada no desktop.");
+  test.skip(browserName !== "chromium");
+
+  // Arrange
+  await page.goto("/");
+
+  // Act
+  await page.keyboard.press("Tab");
+  const skipLink = page.getByRole("link", { name: "Pular para o conteúdo" });
+  await expect(skipLink).toBeFocused();
+  await expect(skipLink).toBeVisible();
+  await page.keyboard.press("Enter");
+
+  // Assert
+  await expect(page.locator("main")).toBeFocused();
+});
+
+test("a navegação marca a seção atual, inclusive dentro de um post", async ({ page }) => {
+  // Arrange
+  await page.goto("/diario");
+  const nav = page.getByRole("navigation", { name: "Principal" });
+
+  // Act
+  await page
+    .getByRole("link", { name: /Fase 2/ })
+    .first()
+    .click();
+
+  // Assert
+  await expect(page).toHaveURL(/\/diario\/fase-2-agenda-sem-dupla-reserva$/);
+  await expect(page.getByRole("heading", { level: 1 })).toContainText("Fase 2");
+  await expect(nav.getByRole("link", { name: "Diário" })).toHaveAttribute("aria-current", "page");
+  await expect(nav.getByRole("link", { name: "Sobre" })).not.toHaveAttribute("aria-current");
+});
+
+test("a home leva ao projeto CareFlow", async ({ page }) => {
+  // Arrange
+  await page.goto("/");
+
+  // Act
+  await page.getByRole("link", { name: "Conhecer o CareFlow" }).click();
+
+  // Assert
+  await expect(page).toHaveURL(/\/projetos\/careflow$/);
+  await expect(page.getByRole("note")).toContainText("dados sintéticos");
+});
+
+test("links externos abrem em nova aba sem window.opener", async ({ page }) => {
+  // Arrange
+  await page.goto("/sobre");
+
+  // Act
+  const external = page.locator('a[target="_blank"]');
+
+  // Assert
+  expect(await external.count()).toBeGreaterThan(0);
+  for (const link of await external.all()) {
+    await expect(link).toHaveAttribute("rel", "noopener noreferrer");
+    await expect(link).toHaveAttribute("href", /^https:\/\//);
+  }
+});
