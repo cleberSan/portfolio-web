@@ -29,6 +29,15 @@ const posts: readonly Post[] = [
     phase: 2,
     tags: ["PostgreSQL", "Concorrência", "Idempotência", "Multi-tenancy"],
   },
+  {
+    slug: "fase-3-cofre-do-paciente",
+    title: "Fase 3: cofre do paciente com cifragem por campo e RLS",
+    description:
+      "Envelope encryption com chave por clínica, blind index para buscar CPF sem guardá-lo e Row-Level Security no PostgreSQL, com testes que leem o banco direto.",
+    publishedAt: "2026-10-14",
+    phase: 3,
+    tags: ["Criptografia", "LGPD", "PostgreSQL", "Multi-tenancy"],
+  },
 ];
 
 /** Posts do mais recente para o mais antigo; no mesmo dia, a fase mais avançada vem primeiro. */

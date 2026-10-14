@@ -73,7 +73,8 @@ export const careflowPhases: readonly Phase[] = [
     number: 3,
     title: "Cofre do paciente com cifragem por campo e RLS",
     demonstrates: "Segurança e LGPD",
-    status: "planejada",
+    status: "concluida",
+    postSlug: "fase-3-cofre-do-paciente",
   },
   {
     number: 4,
