@@ -38,6 +38,15 @@ const posts: readonly Post[] = [
     phase: 3,
     tags: ["Criptografia", "LGPD", "PostgreSQL", "Multi-tenancy"],
   },
+  {
+    slug: "fase-4-consentimento-e-auditoria",
+    title: "Fase 4: consentimento, auditoria e eventos que não se perdem",
+    description:
+      "Revogação de consentimento propagada por RabbitMQ com Outbox e Inbox, trilha de auditoria com cadeia HMAC e testes que derrubam o broker no meio do fluxo.",
+    publishedAt: "2026-10-15",
+    phase: 4,
+    tags: ["Mensageria", "LGPD", "Resiliência", "Auditoria"],
+  },
 ];
 
 /** Posts do mais recente para o mais antigo; no mesmo dia, a fase mais avançada vem primeiro. */
