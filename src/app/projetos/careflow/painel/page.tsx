@@ -5,6 +5,7 @@ import { PageHeader } from "@/components/page-header";
 import { LogList } from "@/components/painel/log-list";
 import { ResilienceReplay } from "@/components/painel/resilience-replay";
 import { TraceWaterfall } from "@/components/painel/trace-waterfall";
+import { TriageSteps } from "@/components/painel/triage-steps";
 import {
   buildWaterfall,
   commitUrl,
@@ -18,7 +19,7 @@ import {
 import { pageMetadata } from "@/lib/metadata";
 
 const description =
-  "Uma execução real do CareFlow com um paciente sintético: o trace de uma reserva, o mesmo paciente visto por cada serviço, a revogação do consentimento propagando e o WhatsApp caindo com fallback para SMS.";
+  "Uma execução real do CareFlow com um paciente sintético: o trace de uma reserva, o mesmo paciente visto por cada serviço, a revogação do consentimento propagando, o WhatsApp caindo com fallback para SMS e a triagem com IA sobre dados pseudonimizados, sempre confirmada por um profissional.";
 
 export const metadata: Metadata = pageMetadata({
   title: "Painel de Privacidade e Resiliência",
@@ -29,11 +30,15 @@ export const metadata: Metadata = pageMetadata({
 const adrUrl =
   "https://github.com/cleberSan/careflow/blob/main/docs/adr/0010-observabilidade-e-painel-de-privacidade.md";
 
+const triageAdrUrl =
+  "https://github.com/cleberSan/careflow/blob/main/docs/adr/0011-triagem-com-ia-pseudonimizada.md";
+
 const scenarios = [
   { id: "reserva", title: "1. Uma reserva, um trace" },
   { id: "visoes", title: "2. O mesmo paciente em cada serviço" },
   { id: "revogacao", title: "3. Revogação do consentimento" },
   { id: "whatsapp", title: "4. WhatsApp fora do ar" },
+  { id: "triagem", title: "5. Triagem com IA e o profissional no circuito" },
 ] as const;
 
 const statusNames: Readonly<Record<string, string>> = {
@@ -44,6 +49,7 @@ const statusNames: Readonly<Record<string, string>> = {
   Superseded: "Descartado",
   granted: "Concedido",
   revoked: "Revogado",
+  unknown: "Desconhecido",
 };
 
 const kindNames: Readonly<Record<string, string>> = {
@@ -57,7 +63,8 @@ function label(names: Readonly<Record<string, string>>, value: string): string {
 }
 
 export default function PainelPage() {
-  const { patient, booking, views, resilience, revocation } = recording;
+  const { patient, booking, views, resilience, triage, revocation } = recording;
+  const triageAudit = groupAudit(triage.audit);
   const commit = commitUrl(recording.commit);
   const bookingTrace = buildWaterfall(booking.trace);
   const propagation = propagationMs(revocation.after);
@@ -68,7 +75,7 @@ export default function PainelPage() {
 
   return (
     <div className="space-y-16">
-      <PageHeader title="Painel de Privacidade e Resiliência" eyebrow="CareFlow · Fase 6">
+      <PageHeader title="Painel de Privacidade e Resiliência" eyebrow="CareFlow · Fases 6 e 7">
         <p>{description}</p>
       </PageHeader>
 
@@ -317,17 +324,75 @@ export default function PainelPage() {
         </details>
       </section>
 
+      <section aria-labelledby="triagem" className="space-y-4">
+        <h2 id="triagem" className="text-2xl font-semibold tracking-tight">
+          {scenarios[4].title}
+        </h2>
+        <p className="text-muted leading-relaxed">
+          O paciente descreve o que sente em texto livre e o CareFlow sugere uma prioridade de
+          atendimento. Não é diagnóstico, e nenhuma sugestão vale sozinha: em todas as triagens
+          abaixo um profissional de saúde confirma ou corrige. Antes de qualquer coisa sair da
+          clínica, nome, CPF, contatos, datas e endereço viram marcadores, e regras de alarme rodam
+          sobre o texto original para o modelo nunca rebaixar um caso grave.
+        </p>
+        <p className="text-muted leading-relaxed">{triage.model}.</p>
+        <TriageSteps steps={triage.steps} audit={triage.audit} />
+        <p>
+          Consentimento para triagem com IA:{" "}
+          <strong>
+            {label(statusNames, triage.consentBefore.state)} antes,{" "}
+            {label(statusNames, triage.consentAfter.state).toLowerCase()} depois da revogação
+          </strong>
+          . Cadeia de auditoria:{" "}
+          <strong>
+            {triage.chain.intact ? "íntegra" : "quebrada"}, {triage.chain.entriesVerified} entradas
+            verificadas
+          </strong>
+          .
+        </p>
+        <div
+          role="region"
+          aria-label="Triagens na trilha de auditoria"
+          tabIndex={0}
+          className="border-border overflow-x-auto rounded-lg border"
+        >
+          <table className="w-full min-w-[30rem] border-collapse text-left text-sm">
+            <caption className="text-muted px-3 py-2 text-left">
+              O que a Triagem registrou na trilha do paciente. Quando a queixa saiu para o modelo, a
+              entrada leva só o SHA-256 do pedido, nunca o texto.
+            </caption>
+            <thead className="bg-surface">
+              <tr>
+                <th scope="col" className="px-3 py-2 font-medium">
+                  Ação
+                </th>
+                <th scope="col" className="px-3 py-2 text-right font-medium">
+                  Entradas
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {triageAudit.map((group) => (
+                <tr key={group.action} className="border-border border-t">
+                  <td className="px-3 py-2 font-mono text-xs">{group.action}</td>
+                  <td className="px-3 py-2 text-right font-mono text-xs">{group.count}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <details className="space-y-3">
+          <summary className="cursor-pointer font-medium">Ver o trace da primeira triagem</summary>
+          <TraceWaterfall trace={triage.trace} label="Trace da triagem" />
+          <LogList logs={triage.logs} label="Logs do trace da triagem" />
+        </details>
+      </section>
+
       <section aria-labelledby="em-breve" className="space-y-4">
         <h2 id="em-breve" className="text-2xl font-semibold tracking-tight">
           Em breve
         </h2>
         <ul className="grid gap-4 sm:grid-cols-2">
-          <li className="border-border rounded-lg border p-4">
-            <p className="font-semibold">Fase 7: triagem com IA</p>
-            <p className="text-muted mt-1 text-sm leading-relaxed">
-              O que o modelo recebe depois da pseudonimização e onde um humano confirma.
-            </p>
-          </li>
           <li className="border-border rounded-lg border p-4">
             <p className="font-semibold">Fase 8: direitos do titular</p>
             <p className="text-muted mt-1 text-sm leading-relaxed">
@@ -337,7 +402,7 @@ export default function PainelPage() {
           </li>
         </ul>
         <p className="text-muted text-sm">
-          Essas fases ainda não existem; o Painel vai mostrá-las quando forem gravadas.
+          Essa fase ainda não existe; o Painel vai mostrá-la quando for gravada.
         </p>
       </section>
 
@@ -346,19 +411,31 @@ export default function PainelPage() {
           Como foi gravado
         </h2>
         <p className="text-muted leading-relaxed">
-          Um teste de ponta a ponta do CareFlow sobe os cinco serviços e o Demo com PostgreSQL e
-          RabbitMQ reais e percorre os quatro cenários com um paciente sintético. O CI publica o
-          resultado como artefato, e o site reproduz esse arquivo. Hospedar o backend ao vivo fica
-          para a fase 9. As decisões estão no{" "}
+          Um teste de ponta a ponta do CareFlow sobe os seis serviços e o Demo com PostgreSQL e
+          RabbitMQ reais e percorre os cinco cenários com um paciente sintético. A triagem não chama
+          o modelo no CI: ela reproduz respostas gravadas, e sem gravação o modelo aparece como
+          indisponível. O CI publica o resultado como artefato, e o site reproduz esse arquivo.
+          Hospedar o backend ao vivo fica para a fase 9. As decisões estão no{" "}
           <ExternalLink href={adrUrl} className="text-accent underline underline-offset-4">
             ADR-0010
+          </ExternalLink>{" "}
+          e no{" "}
+          <ExternalLink href={triageAdrUrl} className="text-accent underline underline-offset-4">
+            ADR-0011
           </ExternalLink>
-          , e o processo está no{" "}
+          , e o processo está nos posts das{" "}
           <Link
             href="/diario/fase-6-observabilidade-e-painel"
             className="text-accent underline underline-offset-4"
           >
-            post da fase 6
+            fase 6
+          </Link>{" "}
+          e{" "}
+          <Link
+            href="/diario/fase-7-triagem-com-ia"
+            className="text-accent underline underline-offset-4"
+          >
+            fase 7
           </Link>
           .
         </p>

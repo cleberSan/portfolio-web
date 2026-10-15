@@ -42,7 +42,26 @@ test.describe("Painel de Privacidade e Resiliência", () => {
     await expect(page.getByRole("button", { name: "Recomeçar" })).toBeEnabled();
   });
 
-  test("abre os traces e logs gravados e mostra as fases 7 e 8 como em breve", async ({ page }) => {
+  test("mostra as triagens com o que saiu para o modelo e a decisão do profissional", async ({
+    page,
+  }) => {
+    // Arrange
+    await page.goto("/projetos/careflow/painel#triagem");
+
+    // Act
+    await page.getByText("Ver o trace da primeira triagem").click();
+
+    // Assert
+    await expect(
+      page.getByRole("heading", { level: 2, name: /Triagem com IA e o profissional/ }),
+    ).toBeVisible();
+    await expect(page.getByTestId("enviado-ao-modelo").first()).toContainText("[nome]");
+    await expect(page.getByTestId("decisao")).toHaveCount(4);
+    await expect(page.getByText(/Confirmou|Corrigiu para/).first()).toBeVisible();
+    await expect(page.getByRole("region", { name: "Trace da triagem", exact: true })).toBeVisible();
+  });
+
+  test("abre os traces e logs gravados e mostra a fase 8 como em breve", async ({ page }) => {
     // Arrange
     await page.goto("/projetos/careflow/painel");
 
@@ -54,6 +73,6 @@ test.describe("Painel de Privacidade e Resiliência", () => {
     await expect(page.getByRole("region", { name: "Logs do trace da reserva" })).toBeVisible();
     await expect(page.getByRole("region", { name: "Trace da revogação" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Em breve" })).toBeVisible();
-    await expect(page.getByText("Fase 7: triagem com IA")).toBeVisible();
+    await expect(page.getByText("Fase 8: direitos do titular")).toBeVisible();
   });
 });
