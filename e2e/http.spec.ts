@@ -62,6 +62,7 @@ test.describe("SEO", () => {
     expect(body).toContain("/diario/fase-0-fundacao</loc>");
     expect(body).toContain("/diario/fase-2-agenda-sem-dupla-reserva</loc>");
     expect(body).toContain("/diario/fase-3-cofre-do-paciente</loc>");
+    expect(body).toContain("/diario/fase-4-consentimento-e-auditoria</loc>");
   });
 
   test("um post declara URL canônica, Open Graph de artigo e imagem gerada", async ({

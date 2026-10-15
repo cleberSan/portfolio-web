@@ -63,6 +63,10 @@ describe("CareFlowPage", () => {
       "href",
       "/diario/fase-3-cofre-do-paciente",
     );
+    expect(screen.getByRole("link", { name: "Ler o post da fase 4" })).toHaveAttribute(
+      "href",
+      "/diario/fase-4-consentimento-e-auditoria",
+    );
   });
 
   it("descreve cada serviço da arquitetura", () => {

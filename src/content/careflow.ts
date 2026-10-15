@@ -80,7 +80,8 @@ export const careflowPhases: readonly Phase[] = [
     number: 4,
     title: "Consentimento e auditoria com Outbox/Inbox",
     demonstrates: "Sistemas distribuídos e compliance",
-    status: "planejada",
+    status: "concluida",
+    postSlug: "fase-4-consentimento-e-auditoria",
   },
   {
     number: 5,

@@ -1,0 +1,96 @@
+## O problema
+
+Quando um paciente revoga o consentimento para agendamento, a revogação precisa chegar à agenda, que é outro serviço com outro banco. Se o evento se perder, a clínica continua marcando consultas para alguém que retirou a base legal. Se o evento for processado duas vezes, a trilha de auditoria registra um acesso que não aconteceu. E o broker de mensagens vai cair em algum momento.
+
+A fase 4 do CareFlow trata esses três problemas com dois serviços novos, Consentimento e Auditoria, e uma camada de mensageria em que nenhum evento se perde nem é aplicado duas vezes.
+
+## Consentimento por finalidade
+
+O serviço Consent guarda um registro por paciente e finalidade (agendamento, notificações, triagem por IA), com a base legal e a versão do termo aceito. Nem toda base legal é revogável: a tutela da saúde por profissional de saúde (LGPD, art. 11, II, f) não depende de consentimento, e tentar revogá-la devolve `409`.
+
+Cada mudança incrementa uma versão no registro, e essa versão viaja no evento. Ela é o que permite ao consumidor lidar com mensagens fora de ordem, como mostro mais abaixo.
+
+## Por que não MassTransit
+
+O MassTransit é o padrão de mercado para mensageria em .NET, mas passou a ter licença comercial a partir da versão 9, e a versão 8 recebe correções só até o fim de 2026. Avaliei também o Wolverine (MIT), mas ele é muito opinativo sobre a forma dos handlers e não trata a clínica por mensagem com Row-Level Security do jeito que o CareFlow precisa.
+
+A decisão foi escrever uma camada fina sobre o `RabbitMQ.Client`, cerca de 1.700 linhas com comentários, em que cada garantia fica visível no código. O raciocínio completo está no [ADR-0006](https://github.com/cleberSan/careflow/blob/main/docs/adr/0006-mensageria-outbox-inbox-rabbitmq.md).
+
+## Outbox: o evento grava junto com a mudança
+
+O jeito ingênuo de publicar um evento é salvar no banco e depois mandar para o broker. Se o processo cair entre um passo e outro, o banco mudou e ninguém ficou sabendo. O Outbox resolve isso gravando o evento numa tabela, na mesma transação da mudança:
+
+```csharp
+consent.Revoke(now);
+db.Enqueue(tenantId, new ConsentRevoked(patientRef, purpose, consent.Version, now), now);
+db.RecordAccess(tenantId, "consent", actor, "consent.revoked", "patient", patientRef, now);
+await db.SaveChangesAsync(ct); // tudo ou nada
+```
+
+Um despachante em segundo plano lê os pendentes com `FOR UPDATE SKIP LOCKED`, para que duas instâncias não publiquem a mesma mensagem ao mesmo tempo. Ele publica com confirmação do broker e só então marca a mensagem como enviada. Se o broker estiver fora, a mensagem ganha uma nova tentativa com espera exponencial e jitter, e o serviço continua atendendo normalmente.
+
+Os ids do Outbox são UUID v7 forçados a ser estritamente crescentes. O v7 padrão só ordena por milissegundo, e um teste mostrou que dois eventos da mesma transação saíam em ordem aleatória.
+
+## Inbox: processar duas vezes não muda nada
+
+O Outbox garante entrega pelo menos uma vez. Se o despachante cair depois da confirmação e antes de marcar a mensagem, ela é publicada de novo. Do outro lado, o consumidor grava `(consumidor, message_id)` numa tabela Inbox na mesma transação do efeito. Uma mensagem repetida encontra o registro e é descartada, e duas entregas simultâneas disputam a chave primária, então só uma confirma.
+
+A clínica viaja no cabeçalho da mensagem, não no corpo. O consumidor abre um escopo com essa clínica antes de tocar no banco, então o Row-Level Security da [fase 3](/diario/fase-3-cofre-do-paciente) vale também no processamento de eventos.
+
+No banco, a API só consegue inserir no Outbox, e só na própria clínica. O despachante usa outro login, que lê o Outbox de todas as clínicas mas não enxerga nenhuma tabela de negócio.
+
+## A agenda passa a conhecer o paciente
+
+Na fase 3 ficou combinado que a agenda validaria o paciente por eventos, para não parar quando o cofre estivesse fora do ar. Agora ela mantém uma projeção local, sem nenhum dado pessoal, alimentada pelo cadastro no cofre e pelos eventos de consentimento.
+
+```
+Cofre ── patient.registered ──┐
+                              ├──▶ RabbitMQ ──▶ Agenda (projeção: cadastrado? base legal?)
+Consent ── consent.granted ───┤
+           consent.revoked ───┘            └──▶ Auditoria (cadeia HMAC por clínica)
+```
+
+O preço é a consistência eventual. Logo depois do cadastro, a agenda pode responder `409 Agenda.PacienteAindaNaoConhecido` por alguns instantes, e o cliente repete a chamada com a mesma chave de idempotência. Essa troca foi decidida explicitamente e está no [ADR-0008](https://github.com/cleberSan/careflow/blob/main/docs/adr/0008-consentimento-e-propagacao-para-a-agenda.md).
+
+Mensagens fora de ordem são tratadas pela versão: a projeção só aplica um evento de consentimento se a versão for maior que a conhecida. Assim, uma concessão antiga que chegue atrasada nunca desfaz uma revogação mais nova.
+
+## Revogação cancela as consultas futuras
+
+Ao receber a revogação para agendamento, a agenda bloqueia novas reservas e cancela as consultas futuras do paciente com o motivo `ConsentRevoked`. Cada cancelamento entra na auditoria com o próprio serviço como ator.
+
+Existe uma corrida aqui: uma reserva pode estar sendo gravada no exato momento em que a revogação chega. A reserva lê a linha da projeção com `FOR SHARE` e a revogação a atualiza com `FOR UPDATE` antes de procurar as consultas. Ou a reserva termina antes e é cancelada pela revogação, ou espera e encontra o paciente revogado. Um teste dispara oito reservas e a revogação ao mesmo tempo e confere que nenhuma consulta futura sobra.
+
+## Auditoria que denuncia adulteração
+
+O serviço de auditoria grava cada leitura e alteração de dado de paciente feita no cofre, no consentimento e na agenda. Cada clínica tem uma cadeia própria, em que cada entrada assina a anterior:
+
+```
+hash(n) = HMAC-SHA256(chave, "careflow-audit-v1" ‖ campos(n) ‖ hash(n-1))
+```
+
+Com um hash simples, quem tem acesso de escrita ao banco altera uma entrada e recalcula a cadeia inteira. Com HMAC, precisa também da chave, que fica fora do banco. Um trigger recusa `UPDATE`, `DELETE` e `TRUNCATE`, e uma linha de "cabeça" por clínica guarda o último hash, o que denuncia até a remoção das últimas entradas.
+
+O endpoint `GET /v1/audit/verification` percorre a cadeia e aponta a primeira quebra. Os testes adulteram o banco direto, com os triggers desligados, e exigem que a verificação encontre cada caso: campo alterado, entrada removida no meio, cauda apagada, hashes trocados e chave desconhecida. Os limites estão no [ADR-0007](https://github.com/cleberSan/careflow/blob/main/docs/adr/0007-auditoria-com-cadeia-hmac.md): quem tiver a chave e acesso de superusuário ainda consegue reescrever tudo, e por isso a ancoragem do hash fora do banco entra na fase 9.
+
+## Testes que derrubam o broker
+
+O projeto ganhou uma suíte de ponta a ponta que sobe PostgreSQL e RabbitMQ reais com Testcontainers e roda os quatro serviços no mesmo processo, cada um com o seu banco e com logins sem superusuário. Os cenários:
+
+- **Revogação de ponta a ponta:** cadastro no cofre, consentimento, duas reservas, revogação. As consultas são canceladas, a reserva seguinte é recusada e a trilha mostra cada passo, de cada serviço, com a cadeia íntegra.
+- **Broker fora:** o teste para o RabbitMQ no meio do fluxo. A concessão é aceita, o evento espera no Outbox com tentativas registradas, a prontidão do serviço continua verde e a saúde do broker aparece degradada. Quando o broker volta, o evento é entregue e a reserva passa.
+- **Duplicata e desordem:** mensagens forjadas direto no broker, com o mesmo id ou com versões invertidas, são aplicadas uma vez e na versão certa.
+- **Mensagens impossíveis:** corpo inválido ou sem clínica vai para a fila de mensagens mortas em vez de voltar à fila para sempre. Evento sem consumidor fica guardado em vez de sumir.
+- **Logs:** depois do fluxo completo, nenhum log do CareFlow contém nome, CPF, e-mail, telefone, pseudônimo ou id da clínica.
+
+São 440 testes no repositório, todos com dados sintéticos e cobertura acima de 80% em cada suíte.
+
+## Trade-offs aceitos
+
+- Consistência eventual na agenda, com uma janela curta em que uma reserva pode ser aceita e logo cancelada pela revogação.
+- A camada de mensageria é código nosso para manter. Sagas e mensagens agendadas só entram se uma fase precisar.
+- A trilha de auditoria cresce sem limite por enquanto. Retenção e expurgo seguro chegam com os direitos do titular, na fase 8.
+- O paciente não é avisado do cancelamento. Isso é trabalho do serviço de notificações, na fase 5.
+
+## Próximo passo
+
+A fase 5 traz notificações por WhatsApp, SMS e e-mail com fallback entre canais e falhas injetáveis, consumindo os mesmos eventos. Antes desta, a [fase 3](/diario/fase-3-cofre-do-paciente) conta como o cofre protege os dados pessoais.
