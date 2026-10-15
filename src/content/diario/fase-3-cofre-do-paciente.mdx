@@ -1,0 +1,111 @@
+## O problema
+
+Agenda, triagem e notificações precisam saber _qual_ paciente, mas não _quem_ ele é. Se cada serviço guardar nome, CPF e telefone, cada serviço vira um ponto de vazamento. E dentro do serviço que guarda esses dados, um backup copiado, um acesso indevido ao banco ou um bug que esqueça o filtro de clínica não podem expor ninguém.
+
+A fase 3 do CareFlow resolve isso com três camadas independentes: um cofre que concentra os dados pessoais, cifragem campo a campo com uma chave por clínica, e Row-Level Security no PostgreSQL.
+
+## Um cofre, um pseudônimo
+
+O novo serviço Patient Vault é o único que conhece dados pessoais. Ao cadastrar um paciente, ele devolve só um `patientRef`, e é isso que a agenda e os próximos serviços guardam.
+
+O pseudônimo é um UUID v4 aleatório, e não um UUID v7: o v7 carrega a data de criação, e até isso é informação que não precisa sair do cofre. O mesmo CPF em duas clínicas gera dois `patientRef` diferentes, então não há como ligar os cadastros entre clínicas.
+
+## Envelope encryption com chave por clínica
+
+Cada clínica tem a sua chave de dados (DEK). Ela nunca é gravada em claro: uma chave mestra (KEK), que mora no serviço de gestão de chaves, cifra a DEK, e só a versão cifrada vai para o banco.
+
+```
+KEK (no KMS) ──cifra──▶ DEK da clínica (cifrada na tabela tenant_keys)
+                             │ HKDF-SHA256
+                ┌────────────┴────────────┐
+       subchave de cifragem       subchave do blind index
+                │                         │
+     AES-256-GCM por campo        HMAC-SHA256 do CPF
+```
+
+A gestão de chaves fica atrás de uma interface pequena, com o mesmo contrato de um KMS de nuvem:
+
+```csharp
+public interface IKeyManagementService
+{
+    Task<WrappedKey> WrapKeyAsync(ReadOnlyMemory<byte> dataKey, KeyWrapContext context, CancellationToken ct);
+    Task<byte[]> UnwrapKeyAsync(WrappedKey wrappedKey, KeyWrapContext context, CancellationToken ct);
+}
+```
+
+Nesta fase a implementação é local, para desenvolvimento e testes, e a aplicação se recusa a subir com ela em produção. Azure Key Vault ou AWS KMS entram quando a nuvem for escolhida, sem mudar o resto do cofre. A DEK decifrada fica alguns minutos em cache, para não pagar uma chamada ao KMS por requisição.
+
+Ter uma chave por clínica também prepara a exclusão: apagar a chave de uma clínica torna ilegível tudo que ela cifrou (crypto-shredding). Isso, junto com a exclusão de um único paciente, chega na fase 8.
+
+## Cifrar cada campo, amarrado ao seu lugar
+
+Nome, CPF, nascimento, e-mail e telefone são cifrados um a um com AES-256-GCM e nonce aleatório. O detalhe que mais importa é o dado autenticado (AAD) de cada campo:
+
+```csharp
+internal readonly record struct FieldContext(Guid PatientRef, string Field)
+{
+    public byte[] ToAssociatedData(Guid tenantId) =>
+        Encoding.UTF8.GetBytes($"careflow:vault:field:v1|{tenantId:N}|{PatientRef:N}|{Field}");
+}
+```
+
+Sem isso, alguém com acesso de escrita ao banco poderia copiar o nome cifrado de um paciente para a linha de outro, e a API devolveria, decifrado e com toda a confiança, o nome errado. Com o AAD, o valor só decifra no paciente, no campo e na clínica em que foi gravado. Há um teste que faz exatamente essa troca direto no banco e exige que a leitura falhe sem revelar nada.
+
+## Buscar por CPF sem guardar o CPF
+
+Com tudo cifrado, o banco não consegue buscar por CPF nem impedir cadastro duplicado. A solução é um _blind index_: um HMAC do CPF normalizado com uma subchave da clínica, gravado ao lado do valor cifrado, com índice único por clínica.
+
+Um hash simples (SHA-256) não serviria. Existem cerca de um bilhão de CPFs possíveis, e um hash sem chave se reverte por força bruta em minutos. Com HMAC, sem a chave da clínica o índice não diz nada, e o mesmo CPF gera índices diferentes em clínicas diferentes.
+
+A busca é um `POST /v1/patients/lookup` com o CPF no corpo, e não um `GET` com o CPF na URL, porque URLs acabam em logs de acesso, proxies e histórico de navegador.
+
+## Row-Level Security: o banco também confere a clínica
+
+Desde a fase 2, um filtro global do EF Core restringe cada consulta à clínica do token. Ele funciona enquanto todo acesso passar por ele. Um `IgnoreQueryFilters`, um SQL cru ou um segundo `DbContext` mal configurado bastam para furar essa camada.
+
+Agora o PostgreSQL confere de novo. Cada tabela com dados de clínica tem RLS forçado e uma política que vale para leitura e escrita:
+
+```sql
+ALTER TABLE patients ENABLE ROW LEVEL SECURITY;
+ALTER TABLE patients FORCE ROW LEVEL SECURITY;
+CREATE POLICY tenant_isolation ON patients
+    USING (tenant_id = NULLIF(current_setting('app.tenant_id', true), '')::uuid)
+    WITH CHECK (tenant_id = NULLIF(current_setting('app.tenant_id', true), '')::uuid);
+```
+
+Um interceptor do EF grava a clínica na sessão a cada conexão aberta, e grava vazio quando não há clínica. Vazio não corresponde a nenhuma linha, então a falha é fechada: na dúvida, nada aparece.
+
+RLS só protege se a aplicação não tiver poder para ignorá-lo. Por isso há dois papéis no banco: as migrations rodam com o dono do schema, e a API conecta com um login sem superusuário, sem `BYPASSRLS` e sem `DELETE`. Um health check de prontidão fica vermelho se alguém configurar a API com uma conexão privilegiada, e a instância não recebe tráfego. A agenda da fase 2 ganhou o mesmo tratamento. Os detalhes estão no [ADR-0003](https://github.com/cleberSan/careflow/blob/main/docs/adr/0003-row-level-security-por-clinica.md) e no [ADR-0004](https://github.com/cleberSan/careflow/blob/main/docs/adr/0004-patient-vault-cifragem-por-campo.md).
+
+## Menor privilégio também na API
+
+- `vault.write` cadastra e altera; `vault.read` lê e busca. Escrever não dá direito de ler: o cadastro devolve só o pseudônimo e a alteração responde `204`, então quem só escreve não recebe de volta dados que não enviou.
+- Alterações exigem `If-Match` com o ETag da última leitura, e `*` é recusado. Duas pessoas editando o mesmo paciente não sobrescrevem uma à outra em silêncio.
+- Toda resposta do cofre sai com `Cache-Control: no-store`.
+
+## O que os testes encontraram
+
+O teste mais revelador percorre todos os fluxos do cofre, inclusive erros, conflitos e adulteração, com todos os logs ligados em nível Trace, e falha se qualquer dado pessoal aparecer em qualquer linha de log, de qualquer biblioteca.
+
+Nenhum nome, CPF, e-mail ou telefone apareceu. O que apareceu foi o pseudônimo, dentro do caminho da URL que o próprio ASP.NET Core registra no início de cada requisição. Não é dado pessoal, e esse log fica desligado em produção, mas a decisão precisava ser explícita: o teste agora exige que nenhum dado pessoal apareça em lugar nenhum e que o pseudônimo não apareça nos logs do próprio CareFlow, e o ADR registra por quê.
+
+Outros pontos cobertos:
+
+- **Isolamento em cada endpoint:** outra clínica recebe `404` ao ler, alterar ou buscar, mesmo com o ETag correto.
+- **RLS sem a API:** conectando direto como o login da aplicação, sem clínica nada aparece, outra clínica não é lida nem alterada, e mover uma linha para outra clínica é recusado pelo banco.
+- **Cifragem em repouso:** lendo o banco como administrador, nenhum dado pessoal aparece em UTF-8, UTF-16 ou Latin-1, e a chave da clínica só existe cifrada.
+- **Concorrência:** dez cadastros simultâneos do mesmo CPF têm exatamente um vencedor, e os primeiros cadastros simultâneos de uma clínica nova criam uma única chave.
+- **Migrations reversíveis:** sobem, descem e sobem de novo nos dois serviços.
+
+São 236 testes no repositório, todos com dados sintéticos gerados na hora, e cobertura acima de 89% em cada módulo.
+
+## Trade-offs aceitos
+
+- O tamanho do valor cifrado revela o tamanho do original, como o comprimento do nome.
+- A busca é só por CPF exato.
+- Cada conexão aberta custa uma ida extra ao banco para gravar a clínica na sessão.
+- A agenda ainda aceita qualquer `patientRef` da clínica. Validar a existência do paciente entra na fase 4, por eventos, para que a agenda não pare quando o cofre estiver fora do ar.
+
+## Próximo passo
+
+A fase 4 traz consentimento e auditoria, com eventos de revogação propagados entre serviços por Outbox e Inbox. Antes desta, a [fase 2](/diario/fase-2-agenda-sem-dupla-reserva) conta como a agenda impede dupla reserva.

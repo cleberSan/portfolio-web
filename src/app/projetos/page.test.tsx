@@ -59,6 +59,10 @@ describe("CareFlowPage", () => {
       "href",
       "/diario/fase-2-agenda-sem-dupla-reserva",
     );
+    expect(screen.getByRole("link", { name: "Ler o post da fase 3" })).toHaveAttribute(
+      "href",
+      "/diario/fase-3-cofre-do-paciente",
+    );
   });
 
   it("descreve cada serviço da arquitetura", () => {

@@ -70,7 +70,7 @@ Outro teste comparava a consulta criada com a mesma consulta lida depois, e as d
 
 ## Isolamento entre clínicas
 
-A clínica vem da claim `tenant_id` do token JWT, e um filtro global do EF Core restringe toda leitura à clínica atual. Pedir a consulta de outra clínica pelo id devolve `404`, e não `403`, para não confirmar que o recurso existe. Sem uma claim válida, a requisição é recusada antes de chegar ao handler. Row-Level Security no banco entra na fase 3, junto com o cofre de dados do paciente.
+A clínica vem da claim `tenant_id` do token JWT, e um filtro global do EF Core restringe toda leitura à clínica atual. Pedir a consulta de outra clínica pelo id devolve `404`, e não `403`, para não confirmar que o recurso existe. Sem uma claim válida, a requisição é recusada antes de chegar ao handler. Row-Level Security no banco entrou na fase 3, junto com o cofre de dados do paciente.
 
 O serviço também pratica minimização de dados: o paciente é só um pseudônimo, a listagem da agenda mostra horários ocupados sem dizer de quem, e logs e métricas não carregam a referência do paciente.
 
@@ -92,4 +92,4 @@ Traces do ASP.NET Core e do Npgsql via OpenTelemetry, e métricas de negócio pr
 
 ## Próximo passo
 
-A fase 3 traz o cofre de dados do paciente, com cifragem por campo, chave por clínica e Row-Level Security no banco. Antes dela, a [fase 0](/diario/fase-0-fundacao) conta como a base de qualidade foi montada.
+A [fase 3](/diario/fase-3-cofre-do-paciente) trouxe o cofre de dados do paciente, com cifragem por campo, chave por clínica e Row-Level Security no banco. Antes dela, a [fase 0](/diario/fase-0-fundacao) conta como a base de qualidade foi montada.
