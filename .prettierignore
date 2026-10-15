@@ -7,3 +7,5 @@ AGENTS.md
 test-results
 playwright-report
 blob-report
+# Gravação do Painel: cópia byte a byte do artefato panel-recording do CI do CareFlow.
+src/content/painel/gravacao.json

@@ -56,6 +56,15 @@ const posts: readonly Post[] = [
     phase: 5,
     tags: ["Resiliência", "Polly", "LGPD", "Chaos engineering"],
   },
+  {
+    slug: "fase-6-observabilidade-e-painel",
+    title: "Fase 6: um trace por reserva e um painel que não inventa nada",
+    description:
+      "OpenTelemetry atravessando o RabbitMQ, três barreiras contra dado pessoal na telemetria e um Painel que reproduz uma execução real gravada pelo CI.",
+    publishedAt: "2026-10-15",
+    phase: 6,
+    tags: ["OpenTelemetry", "Observabilidade", "LGPD", "Segurança"],
+  },
 ];
 
 /** Posts do mais recente para o mais antigo; no mesmo dia, a fase mais avançada vem primeiro. */

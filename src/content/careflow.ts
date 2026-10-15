@@ -94,7 +94,8 @@ export const careflowPhases: readonly Phase[] = [
     number: 6,
     title: "OpenTelemetry completo e Painel de Privacidade e Resiliência",
     demonstrates: "Observabilidade",
-    status: "planejada",
+    status: "concluida",
+    postSlug: "fase-6-observabilidade-e-painel",
   },
   {
     number: 7,

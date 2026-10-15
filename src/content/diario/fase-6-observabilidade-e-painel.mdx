@@ -1,0 +1,80 @@
+## O problema
+
+Uma reserva no CareFlow passa por cinco lugares antes de virar aviso no celular do paciente: a API da agenda, o banco, o Outbox, o RabbitMQ e o serviço de Notificações, que ainda lê o contato no cofre. Quando um aviso sai por SMS em vez de WhatsApp, a pergunta "por quê?" exigia juntar logs de quatro serviços à mão.
+
+Telemetria também é um canal clássico de vazamento. Basta um atributo de span com o telefone, um baggage repassado ou uma linha de log com o CPF para o dado pessoal sair do [cofre](/diario/fase-3-cofre-do-paciente) e ir parar num sistema de observabilidade que ninguém audita.
+
+A fase 6 resolve as duas coisas e abre o sistema para quem visita o site, com o [Painel de Privacidade e Resiliência](/projetos/careflow/painel).
+
+## Um trace atravessando o broker
+
+O OpenTelemetry instrumenta HTTP e banco sozinho. O que ele não faz é atravessar uma fila com Outbox: a mensagem é gravada numa transação e publicada depois, por outro processo. Sem cuidado, cada lado vira um trace diferente.
+
+A solução foi levar o contexto junto com a mensagem. Ao gravar no Outbox, o publicador guarda o `traceparent` no envelope. O relay publica com esse contexto, e o consumidor abre o span de processamento como filho dele, depois de o Inbox confirmar que a mensagem é nova. Uma reserva virou um trace só, da API da agenda ao aviso enviado. Uma revogação também: do Consentimento ao aviso de cancelamento e à auditoria.
+
+```
+POST /v1/appointments (Agenda)
+ └─ publish appointment.booked
+     └─ process appointment.booked (Notificações)
+         └─ deliver notification
+             ├─ GET /v1/patients/{id}/contact (Cofre)
+             └─ send sms   ← evento "fallback: whatsapp → sms"
+```
+
+Duas decisões menores fizeram diferença. Baggage vindo de fora é descartado na entrada de cada serviço, porque baggage repassado é o jeito mais fácil de um cliente injetar algo que depois aparece em todo lugar. E as varreduras periódicas do Outbox, spans de banco sem pai, deixaram de ser gravadas: eram a maior parte do volume e não respondiam a nenhuma pergunta.
+
+## Três barreiras contra dado pessoal
+
+A primeira barreira é o próprio código: logs levam só o pseudônimo mascarado, tipos com contato têm `ToString` redigido e rotas aparecem pelo template. A segunda é um processador no serviço, antes do exportador, que troca identificadores em caminhos por `{id}`, tira query strings e mascara qualquer coisa com forma de e-mail, CPF ou telefone, inclusive o que vem de bibliotecas. A terceira é o OpenTelemetry Collector, que repete a redação e apaga endereço do cliente, cabeçalhos e user agent.
+
+Barreiras não provam nada sozinhas. A prova é um teste de ponta a ponta que roda todos os fluxos com logs em nível Trace e varre tudo o que foi exportado (spans, eventos, baggage, logs e métricas) atrás do nome, CPF, telefone e e-mail do paciente sintético. Antes de confiar nele, desliguei a redação e conferi que ele falhava.
+
+## A stack local
+
+Um perfil do docker compose sobe Collector, Tempo, Loki, Prometheus e Grafana, só no loopback, com dois dashboards versionados no repositório: um de visão geral (latência por endpoint, Outbox, filas e mensagens mortas) e um de privacidade e resiliência (tempo de propagação da revogação, envios e fallbacks por canal, estado do circuit breaker). Grafana, Tempo e Loki são AGPLv3. Aqui eles rodam sem modificação e só como ferramenta local, e o [ADR-0010](https://github.com/cleberSan/careflow/blob/main/docs/adr/0010-observabilidade-e-painel-de-privacidade.md) registra quando isso mudaria.
+
+## Um painel que não inventa nada
+
+O site é estático e o CareFlow não tem backend hospedado. As opções eram simular os cenários no navegador, o que não prova nada, ou hospedar o sistema, com custo, superfície de ataque e a escolha de nuvem antecipada. A escolha foi uma terceira: o CI grava uma execução real e o site reproduz a gravação, com data e commit visíveis.
+
+Um teste de ponta a ponta sobe os cinco serviços e o Demo, o backend do Painel, com PostgreSQL e RabbitMQ reais. Ele percorre os quatro cenários com um paciente sintético e grava o resultado como artefato do CI:
+
+1. a reserva vista como um trace;
+2. o mesmo paciente no cofre (completo), na agenda, no consentimento e nas notificações (pseudônimo) e nos logs (mascarado);
+3. a revogação do consentimento cancelando as consultas, avisando o paciente e deixando a cadeia de auditoria íntegra;
+4. o WhatsApp derrubado, a confirmação saindo por SMS, o circuito abrindo e fechando depois que o WhatsApp volta.
+
+Na gravação publicada, CPF e telefone aparecem só com os dois últimos dígitos. O CPF gerado passa na validação de dígitos, e um CPF válido fixo num arquivo público pode coincidir com o de alguém. O mesmo teste falha se qualquer dado pessoal aparecer fora da visão do cofre.
+
+## O Demo, pensado para ser exposto
+
+O Demo roda hoje só localmente e no CI, mas foi escrito como se fosse para a internet, porque é isso que ele vira na fase 9:
+
+- a sessão é um cookie `__Host-`, `HttpOnly`, `Secure` e `SameSite=Strict`, com 32 bytes aleatórios; o servidor guarda só o hash, e o navegador nunca vê token nem id de clínica;
+- toda requisição exige um cabeçalho próprio e origem permitida, contra CSRF;
+- há limite de sessões por IP, de requisições por sessão e de reservas por sessão;
+- cada visitante ganha uma clínica sintética nova e uma partição própria do circuit breaker, então derrubar o WhatsApp numa sessão não afeta nenhuma outra;
+- a sessão só lê traces que ela criou, e o id é validado antes de chegar ao Tempo ou ao Loki;
+- o contexto de trace vindo do navegador é ignorado, e só atributos de uma lista de permissão chegam ao navegador;
+- no fim da sessão, os dados da clínica são apagados em cada serviço, e a partição só volta ao pool depois disso.
+
+A auditoria é a exceção da limpeza. Ela é só de inclusão, com cadeia HMAC, e apagar quebraria a verificação. Como cada visitante usa uma clínica nova, a trilha de um nunca aparece para o seguinte.
+
+Não entraram YARP nem Keycloak. O Demo chama os serviços com tokens curtos de um emissor local, recusado em produção, como o token de serviço da [fase 5](/diario/fase-5-notificacoes-com-fallback).
+
+## O bug que o painel encontrou
+
+O teste da revogação marcava duas consultas seguidas numa partição nova. As duas confirmações chegavam juntas, e o registro de pipelines do Polly montava o pipeline da partição duas vezes. Eu passava para os dois o mesmo `CircuitBreakerStateProvider`, que só pode servir a um circuit breaker, e a segunda montagem estourava. O aviso voltava para a fila e saía atrasado.
+
+A correção foi parar de ler o estado do circuito por esse objeto e registrar as transições que o próprio Polly anuncia (aberto, meio-aberto, fechado e isolado). O teste de regressão monta o mesmo pipeline duas vezes e fica vermelho sem a correção. É o tipo de bug que só aparece com concorrência de verdade, e foi o cenário de demonstração que o encontrou.
+
+## Trade-offs aceitos
+
+- O Demo guarda sessões em memória e roda com uma instância só. Hospedado com réplicas, precisa de armazenamento e rate limiting compartilhados.
+- O estado dos circuitos continua por processo, como na fase 5.
+- A gravação envelhece. O site mostra data e commit, e atualizar é copiar o artefato do CI.
+- A auditoria das sessões de demonstração cresce; retenção é assunto da fase 8.
+
+## Próximo passo
+
+A fase 7 traz a triagem com IA sobre dados pseudonimizados, com um humano confirmando cada sugestão. O Painel já reserva um lugar para ela. Antes desta, a [fase 5](/diario/fase-5-notificacoes-com-fallback) conta como o fallback entre canais funciona.
