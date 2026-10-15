@@ -1,0 +1,94 @@
+## O problema
+
+Um aviso de consulta parece a parte fácil de um sistema de saúde. Não é. O provedor de WhatsApp cai, o de SMS fica lento, o de e-mail aceita a mensagem e perde a resposta. Se o sistema tenta de novo sem cuidado, o paciente recebe a mesma mensagem três vezes. Se desiste cedo, a consulta fica sem aviso. E se o aviso sai para quem retirou o consentimento, ou leva o nome do paciente e o motivo da consulta num SMS, o problema deixa de ser de UX e vira de privacidade.
+
+A fase 5 do CareFlow cria o serviço de Notificações: confirmação quando a consulta é marcada, lembrete antes do horário e aviso de cancelamento, inclusive quando o motivo é a revogação do consentimento, que tinha ficado pendente na [fase 4](/diario/fase-4-consentimento-e-auditoria).
+
+## Do agendamento ao aviso
+
+A agenda passou a publicar `appointment.booked` e `appointment.cancelled` pelo mesmo Outbox da fase 4, na transação da reserva. O Notifications consome pelo Inbox e mantém duas projeções por clínica, sem dado pessoal: o estado de cada consulta e o consentimento do paciente para a finalidade `notifications`.
+
+```
+Agenda ── appointment.booked/cancelled ──┐
+                                         ├──▶ Notifications ──▶ WhatsApp → SMS → e-mail
+Consent ── consent.granted/revoked ──────┘          │
+                                                    ├── contato lido no cofre, na hora
+                                                    └── cada envio e cada não envio na auditoria
+```
+
+Eventos chegam duplicados e fora de ordem. O cancelamento pode chegar antes da confirmação. A projeção da consulta só anda para a frente (cancelada é terminal), e um índice único por clínica, consulta e tipo de aviso impede dois avisos iguais. O teste que entrega o cancelamento antes do agendamento confere que o paciente recebe só o aviso de cancelamento.
+
+## Lembretes sem biblioteca de agendamento
+
+Quartz.NET e Hangfire resolvem agendamento, mas trazem modelo e schema próprios, e o Hangfire tem partes pagas. Um lembrete, no fundo, é um envio com data. Cada aviso ganha uma linha numa fila com `due_at`, e um despachante pega os vencidos com `FOR UPDATE SKIP LOCKED`, o mesmo padrão do Outbox.
+
+O job é pego com um lease, e o lease também é o token de posse. Se uma instância trava e outra pega o mesmo job depois de o lease vencer, a primeira não consegue mais gravar o resultado por cima. O processamento roda dentro da clínica do job, então o Row-Level Security vale aqui também.
+
+## As regras valem na hora do envio
+
+Agendar um lembrete para daqui a nove dias e conferir as regras só no agendamento seria um erro: muita coisa muda em nove dias. Então tudo é decidido na hora de enviar:
+
+- consulta cancelada descarta confirmação e lembrete pendentes;
+- consulta que já começou expira o aviso;
+- consentimento revogado encerra o aviso como não enviado, com o motivo na auditoria;
+- consentimento que ainda não chegou espera uma janela curta, porque o evento do Consent pode vir depois do da agenda.
+
+## Fallback sem mensagem duplicada
+
+Cada canal é um `HttpClient` com o `Microsoft.Extensions.Http.Resilience`, que usa o Polly v8 por baixo. Por canal, de fora para dentro, ficam o timeout total, o retry exponencial com jitter, o circuit breaker e o timeout de cada tentativa. Quando um canal falha, o roteador passa para o próximo da ordem configurada pela clínica.
+
+O retry é onde a duplicata nasce. Se o provedor aceitou a mensagem e a resposta se perdeu, a nova tentativa manda de novo. Cada envio leva uma chave de idempotência estável por aviso e canal, e o provedor devolve a mesma mensagem em vez de criar outra:
+
+```csharp
+// A mesma chave em todas as tentativas, rodadas e reprocessamentos deste aviso neste canal.
+public string IdempotencyKeyFor(Channel channel) => $"{Id:N}-{channel.Slug()}";
+```
+
+Entre canais diferentes, a chave não ajuda: o SMS não sabe o que o WhatsApp aceitou. Antes de cair para o próximo canal depois de uma falha ambígua, o serviço consulta o provedor pela chave. Se a mensagem foi aceita, ela conta como entregue. Sobra um risco, registrado no [ADR-0009](https://github.com/cleberSan/careflow/blob/main/docs/adr/0009-notificacoes-com-fallback-e-falhas-injetaveis.md): se o provedor aceita, perde a resposta e também não responde à consulta, o paciente pode receber o aviso em dois canais. É o raro preço de não deixar ninguém sem aviso.
+
+## Derrubando canais de propósito
+
+Não há provedor real nesta fase. Os três canais são handlers HTTP que imitam a API de um provedor, com chave de idempotência e tudo. Por isso o pipeline de resiliência roda igual ao de produção, e trocar por um provedor de verdade será escrever um adaptador.
+
+Em cima deles, cada canal aceita falhas injetadas pelas estratégias de chaos do Polly: latência, erro 503, indisponibilidade total e resposta perdida depois do aceite. Elas ficam dentro do pipeline, então passam pelo mesmo retry e pelo mesmo circuit breaker que uma falha real. Vêm desligadas e se ligam por configuração, sem reiniciar, para o painel da fase 6 poder derrubar o WhatsApp ao vivo.
+
+Os testes usam isso para provar cada comportamento:
+
+- WhatsApp fora do ar cai para o SMS; WhatsApp e SMS com erro caem para o e-mail;
+- latência acima do timeout conta como falha e aciona o fallback;
+- resposta perdida depois do aceite gera exatamente uma mensagem para o paciente;
+- o circuito abre, passa para meio-aberto, volta a abrir com uma sonda que falha e fecha com uma que funciona;
+- com todos os canais fora, o aviso tenta algumas rodadas com espera crescente e termina como falha, auditada.
+
+O teste de ponta a ponta sobe os cinco serviços com PostgreSQL e RabbitMQ reais e o WhatsApp derrubado. Ele marca a consulta, espera a confirmação chegar pelo SMS, cancela, espera o aviso de cancelamento e confere a trilha de auditoria íntegra.
+
+## O contato não sai do cofre
+
+O telefone e o e-mail do paciente só existem, cifrados, no [cofre](/diario/fase-3-cofre-do-paciente). A alternativa era guardar uma cópia cifrada no Notifications, para enviar mesmo com o cofre fora. Isso duplicaria dado pessoal que a fase 8 vai precisar apagar.
+
+A escolha foi ler o contato na hora do envio, num endpoint novo e estreito que devolve só telefone e e-mail. Cada leitura entra na trilha de auditoria com o Notifications como ator. Se o cofre está fora, o aviso continua pendente e tenta de novo depois, em vez de virar "paciente sem contato".
+
+Ainda não existe identidade entre serviços, e as APIs só aceitavam token de usuário. O Notifications passou a emitir um token curto por clínica, assinado com ES256. O cofre guarda só a chave pública, então quem valida não consegue emitir. O cofre aceita esse token apenas na rota de contato: o mesmo token com escopo de leitura geral recebe `401` no cadastro completo. Esse emissor local é recusado em produção e dará lugar ao provedor de identidade na fase 9.
+
+## O que o paciente recebe
+
+> CareFlow: sua consulta está marcada para 20/11/2026 às 10:30 em Clínica Exemplo.
+
+A mensagem leva só data, horário e o nome curto da clínica, no fuso da clínica. Não leva o nome do paciente, a especialidade nem o motivo da consulta, porque um SMS é lido na tela bloqueada. O nome da clínica é validado para não aceitar domínios, o que fecha uma porta para phishing. No cancelamento por revogação, a mensagem diz o motivo, para o paciente entender por que a consulta sumiu.
+
+O contato nunca vai para log nem para o banco do Notifications. Um teste percorre os fluxos com logs em nível Trace e varre logs e banco atrás do telefone e do e-mail.
+
+## Observabilidade
+
+Há métricas por canal para envios, falhas, fallbacks, avisos não enviados e estado do circuit breaker. O endpoint `/health/channels` responde `Degraded` com o estado de cada circuito quando um canal está com problema. O serviço continua pronto, porque um canal degradado com fallback funcionando não é motivo para tirar a instância do ar.
+
+## Trade-offs aceitos
+
+- Sem Redis: o estado do circuit breaker é por instância. Com várias instâncias, cada uma abre o seu circuito, e o painel da fase 6 precisa falar com cada uma.
+- Com o cofre fora do ar, os avisos atrasam em vez de sair.
+- O risco residual de aviso em dois canais, descrito acima.
+- Paciente cujo consentimento ainda não chegou espera alguns minutos pelo aviso.
+
+## Próximo passo
+
+A fase 6 junta OpenTelemetry de ponta a ponta e o Painel de Privacidade e Resiliência, onde dá para derrubar o WhatsApp e ver o fallback acontecer. Antes desta, a [fase 4](/diario/fase-4-consentimento-e-auditoria) conta como os eventos chegam sem se perder.

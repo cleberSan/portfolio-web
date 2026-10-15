@@ -87,7 +87,8 @@ export const careflowPhases: readonly Phase[] = [
     number: 5,
     title: "Notificações com fallback e falhas injetáveis",
     demonstrates: "Resiliência",
-    status: "planejada",
+    status: "concluida",
+    postSlug: "fase-5-notificacoes-com-fallback",
   },
   {
     number: 6,
