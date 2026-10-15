@@ -47,6 +47,15 @@ const posts: readonly Post[] = [
     phase: 4,
     tags: ["Mensageria", "LGPD", "Resiliência", "Auditoria"],
   },
+  {
+    slug: "fase-5-notificacoes-com-fallback",
+    title: "Fase 5: notificações com fallback e falhas injetáveis",
+    description:
+      "WhatsApp, SMS e e-mail com circuit breaker por canal, retry sem mensagem duplicada, falhas injetadas de propósito e contato do paciente lido só no cofre.",
+    publishedAt: "2026-10-15",
+    phase: 5,
+    tags: ["Resiliência", "Polly", "LGPD", "Chaos engineering"],
+  },
 ];
 
 /** Posts do mais recente para o mais antigo; no mesmo dia, a fase mais avançada vem primeiro. */
