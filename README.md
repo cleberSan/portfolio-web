@@ -6,17 +6,18 @@
 
 Portfólio pessoal de Cleber, Engenheiro de Software Full-Stack Sênior, com foco em sistemas críticos, microsserviços distribuídos e frontends modernos.
 
-Construído com Next.js 16, TypeScript e Tailwind CSS. O projeto vitrine é o [CareFlow](https://github.com/cleberSan/careflow), e o site exibe sua evolução num diário de bordo e, na fase 6, vai mostrar o Painel de Privacidade e Resiliência ao vivo.
+Construído com Next.js 16, TypeScript e Tailwind CSS. O projeto vitrine é o [CareFlow](https://github.com/cleberSan/careflow), e o site exibe sua evolução num diário de bordo e mostra o Painel de Privacidade e Resiliência, que reproduz uma execução real gravada pelo CI do CareFlow.
 
 ## O que tem no site
 
-| Rota                 | Conteúdo                                                    |
-| -------------------- | ----------------------------------------------------------- |
-| `/`                  | Apresentação, foco, projeto em destaque e posts recentes    |
-| `/projetos/careflow` | Arquitetura, princípios e roadmap do CareFlow               |
-| `/diario`            | Diário de bordo em MDX, um post por fase                    |
-| `/stack`             | Tecnologias, com links para onde aparecem em código público |
-| `/sobre`             | Experiência, forma de trabalho e contato                    |
+| Rota                        | Conteúdo                                                    |
+| --------------------------- | ----------------------------------------------------------- |
+| `/`                         | Apresentação, foco, projeto em destaque e posts recentes    |
+| `/projetos/careflow`        | Arquitetura, princípios e roadmap do CareFlow               |
+| `/projetos/careflow/painel` | Painel de Privacidade e Resiliência (gravação real)         |
+| `/diario`                   | Diário de bordo em MDX, um post por fase                    |
+| `/stack`                    | Tecnologias, com links para onde aparecem em código público |
+| `/sobre`                    | Experiência, forma de trabalho e contato                    |
 
 ## Qualidade
 
@@ -33,7 +34,7 @@ Hospedado na Vercel: merge no `main` publica em produção e cada PR ganha um pr
 
 - [x] **Fase 0:** padrões do repositório, CI com qualidade e segurança, cabeçalhos de segurança, ADRs
 - [x] **Fase 1:** home, sobre, stack, diário de bordo em MDX, SEO, acessibilidade e testes E2E
-- [ ] **Fase 6:** Painel de Privacidade e Resiliência integrado ao CareFlow
+- [x] **Fase 6:** Painel de Privacidade e Resiliência, reproduzindo a gravação do CI do CareFlow
 
 ## Decisões
 

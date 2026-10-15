@@ -27,6 +27,25 @@ export default function CareFlowPage() {
         clínica.
       </p>
 
+      <section aria-labelledby="painel" className="space-y-4">
+        <h2 id="painel" className="text-2xl font-semibold tracking-tight">
+          Veja funcionando
+        </h2>
+        <p className="text-muted leading-relaxed">
+          O Painel de Privacidade e Resiliência reproduz uma execução real do sistema com um
+          paciente sintético: o trace de uma reserva, o mesmo paciente em cada serviço, a revogação
+          do consentimento propagando e o WhatsApp caindo com fallback para SMS.
+        </p>
+        <p>
+          <Link
+            href="/projetos/careflow/painel"
+            className="text-accent font-medium underline underline-offset-4"
+          >
+            Abrir o Painel
+          </Link>
+        </p>
+      </section>
+
       <section aria-labelledby="por-que" className="space-y-4">
         <h2 id="por-que" className="text-2xl font-semibold tracking-tight">
           Por que saúde
@@ -56,8 +75,8 @@ export default function CareFlowPage() {
         </h2>
         <p className="text-muted leading-relaxed">
           A arquitetura alvo usa microsserviços em .NET 10, um banco PostgreSQL por serviço e
-          comunicação por eventos com Outbox/Inbox. A agenda já está implementada; os demais
-          serviços entram nas próximas fases do roadmap.
+          comunicação por eventos com Outbox/Inbox. Agenda, cofre, consentimento, notificações e
+          auditoria já estão implementados; a triagem entra na fase 7.
         </p>
         <dl className="grid gap-4 sm:grid-cols-2">
           {careflow.services.map((service) => (

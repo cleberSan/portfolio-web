@@ -32,6 +32,7 @@ export const staticRoutes = [
   "/",
   "/projetos",
   "/projetos/careflow",
+  "/projetos/careflow/painel",
   "/diario",
   "/stack",
   "/sobre",
