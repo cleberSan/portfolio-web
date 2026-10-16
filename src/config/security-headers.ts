@@ -3,15 +3,23 @@ export type Header = { key: string; value: string };
 export type SecurityHeadersOptions = {
   /** `next dev` precisa de `'unsafe-eval'` para o React reconstruir stack traces. */
   isDevelopment: boolean;
+  /** Backend da demonstração ao vivo do Painel; sem ele, o navegador só fala com o próprio site. */
+  demoBackend?: URL;
 };
 
 /**
  * CSP sem nonce, para manter as páginas estáticas (ver ADR-0003). Todo recurso vem da
  * própria origem; `'unsafe-inline'` em scripts existe porque o Next.js injeta o payload
- * do React Server Components em scripts inline cujo conteúdo muda a cada build.
+ * do React Server Components em scripts inline cujo conteúdo muda a cada build. A única origem
+ * de fora é o backend da demonstração ao vivo, em `connect-src`.
  */
-export function buildContentSecurityPolicy({ isDevelopment }: SecurityHeadersOptions): string {
+export function buildContentSecurityPolicy({
+  isDevelopment,
+  demoBackend,
+}: SecurityHeadersOptions): string {
   const scriptSrc = ["'self'", "'unsafe-inline'", ...(isDevelopment ? ["'unsafe-eval'"] : [])];
+  // Só a origem, nunca um curinga: o Painel ao vivo chama um único host.
+  const connectSrc = ["'self'", ...(demoBackend ? [demoBackend.origin] : [])];
 
   return [
     "default-src 'self'",
@@ -20,7 +28,7 @@ export function buildContentSecurityPolicy({ isDevelopment }: SecurityHeadersOpt
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' blob: data:",
     "font-src 'self'",
-    "connect-src 'self'",
+    `connect-src ${connectSrc.join(" ")}`,
     "frame-src 'none'",
     "object-src 'none'",
     "base-uri 'self'",

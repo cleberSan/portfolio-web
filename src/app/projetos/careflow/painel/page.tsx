@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ExternalLink } from "@/components/external-link";
 import { PageHeader } from "@/components/page-header";
+import { LivePanel } from "@/components/painel/live-panel";
 import { LogList } from "@/components/painel/log-list";
 import { ResilienceReplay } from "@/components/painel/resilience-replay";
 import { RightsRequests } from "@/components/painel/rights-requests";
@@ -22,6 +23,7 @@ import {
   rightsServiceName,
   serviceName,
 } from "@/content/painel";
+import { demoBackend } from "@/config/demo-backend";
 import { pageMetadata } from "@/lib/metadata";
 
 const description =
@@ -38,6 +40,9 @@ const adrUrl =
 
 const triageAdrUrl =
   "https://github.com/cleberSan/careflow/blob/main/docs/adr/0011-triagem-com-ia-pseudonimizada.md";
+
+const hostingAdrUrl =
+  "https://github.com/cleberSan/careflow/blob/main/docs/adr/0013-demonstracao-hospedada-na-oracle.md";
 
 const rightsAdrUrl =
   "https://github.com/cleberSan/careflow/blob/main/docs/adr/0012-direitos-do-titular-e-fhir.md";
@@ -93,7 +98,7 @@ export default function PainelPage() {
 
   return (
     <div className="space-y-16">
-      <PageHeader title="Painel de Privacidade e Resiliência" eyebrow="CareFlow · Fases 6 a 8">
+      <PageHeader title="Painel de Privacidade e Resiliência" eyebrow="CareFlow · Fases 6 a 9">
         <p>{description}</p>
       </PageHeader>
 
@@ -114,9 +119,12 @@ export default function PainelPage() {
         </p>
         <p>
           Nada nesta página é simulado: cada número, span e linha de log veio dessa execução. O
-          paciente é sintético, e o site só reproduz a gravação, sem chamar nenhum servidor.
+          paciente é sintético, e os seis cenários reproduzem a gravação sem chamar nenhum servidor.
+          Só a seção Ao vivo fala com o backend, quando ele está no ar.
         </p>
       </div>
+
+      <LivePanel backendUrl={demoBackend?.origin} />
 
       <nav aria-labelledby="cenarios" className="space-y-3">
         <h2 id="cenarios" className="text-2xl font-semibold tracking-tight">
@@ -570,15 +578,15 @@ export default function PainelPage() {
         </h2>
         <ul className="grid gap-4 sm:grid-cols-2">
           <li className="border-border rounded-lg border p-4">
-            <p className="font-semibold">Fase 9: carga, infraestrutura e deploy</p>
+            <p className="font-semibold">Carga e deploy gradual</p>
             <p className="text-muted mt-1 text-sm leading-relaxed">
-              Testes de carga, infraestrutura como código e deploy com canary, para o backend rodar
-              fora do CI.
+              Testes de carga contra a demonstração hospedada e deploy gradual, quando houver mais
+              de uma instância para dividir o tráfego.
             </p>
           </li>
         </ul>
         <p className="text-muted text-sm">
-          Essa fase ainda não existe; o Painel vai mostrá-la quando for gravada.
+          Isso ainda não existe; o Painel vai mostrar quando for gravado.
         </p>
       </section>
 
@@ -592,8 +600,12 @@ export default function PainelPage() {
           o modelo no CI: ela reproduz respostas gravadas, e sem gravação o modelo aparece como
           indisponível. O código de confirmação dos pedidos vai para um provedor simulado, e o
           Painel lê a mensagem numa caixa de entrada que só existe fora de produção. O CI publica o
-          resultado como artefato, e o site reproduz esse arquivo. Hospedar o backend ao vivo fica
-          para a fase 9. As decisões estão no{" "}
+          resultado como artefato, e o site reproduz esse arquivo. Desde a fase 9, o mesmo backend
+          roda numa VM gratuita da Oracle para a seção Ao vivo (
+          <ExternalLink href={hostingAdrUrl} className="text-accent underline underline-offset-4">
+            ADR-0013
+          </ExternalLink>
+          ). As decisões dos cenários estão no{" "}
           <ExternalLink href={adrUrl} className="text-accent underline underline-offset-4">
             ADR-0010
           </ExternalLink>
@@ -618,13 +630,20 @@ export default function PainelPage() {
             className="text-accent underline underline-offset-4"
           >
             fase 7
-          </Link>{" "}
-          e{" "}
+          </Link>
+          ,{" "}
           <Link
             href="/diario/fase-8-direitos-do-titular"
             className="text-accent underline underline-offset-4"
           >
             fase 8
+          </Link>{" "}
+          e{" "}
+          <Link
+            href="/diario/fase-9-careflow-no-ar"
+            className="text-accent underline underline-offset-4"
+          >
+            fase 9
           </Link>
           .
         </p>

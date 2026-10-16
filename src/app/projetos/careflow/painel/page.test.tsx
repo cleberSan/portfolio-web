@@ -12,7 +12,7 @@ describe("PainelPage", () => {
     expect(note).toHaveTextContent(/Nada nesta página é simulado/);
   });
 
-  it("mostra os seis cenários e só a fase 9 como em breve", () => {
+  it("mostra os seis cenários, a seção ao vivo e o que vem depois", () => {
     render(<PainelPage />);
 
     for (const name of [
@@ -22,12 +22,13 @@ describe("PainelPage", () => {
       "4. WhatsApp fora do ar",
       "5. Triagem com IA e o profissional no circuito",
       "6. Direitos do titular: os dados de volta e a eliminação",
+      "Ao vivo",
       "Em breve",
     ]) {
       expect(screen.getByRole("heading", { level: 2, name })).toBeInTheDocument();
     }
-    expect(screen.queryByText("Fase 8: direitos do titular")).not.toBeInTheDocument();
-    expect(screen.getByText("Fase 9: carga, infraestrutura e deploy")).toBeInTheDocument();
+    expect(screen.queryByText("Fase 9: carga, infraestrutura e deploy")).not.toBeInTheDocument();
+    expect(screen.getByText("Carga e deploy gradual")).toBeInTheDocument();
   });
 
   it("mostra cada triagem com o que saiu da clínica e a decisão do profissional", () => {

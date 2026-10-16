@@ -49,3 +49,7 @@ frame-ancestors 'none'
 - As páginas continuam estáticas (`○` no build) e podem ser servidas por CDN.
 - Um script injetado na própria página ainda executaria; a proteção contra isso é não haver entrada de usuário e revisar todo conteúdo em PR.
 - Qualquer integração de terceiros (analytics, fontes externas, embeds) exige mudar a CSP e, portanto, um novo ADR.
+
+## Atualização (fase 9 do CareFlow)
+
+A seção Ao vivo do Painel chama o backend da demonstração hospedada direto do navegador. `connect-src` passa a aceitar, além de `'self'`, só a origem definida em `NEXT_PUBLIC_CAREFLOW_DEMO_URL` no build (`src/config/demo-backend.ts`, que recusa tudo que não for uma origem `https`). As demais diretivas não mudam. Sem a variável, a CSP continua igual. A decisão da hospedagem está no [ADR-0013 do CareFlow](https://github.com/cleberSan/careflow/blob/main/docs/adr/0013-demonstracao-hospedada-na-oracle.md).

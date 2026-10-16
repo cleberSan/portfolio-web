@@ -35,8 +35,8 @@ export default function CareFlowPage() {
           </ExternalLink>
         </div>
         <p className="text-muted text-sm leading-relaxed">
-          A demonstração reproduz execuções reais gravadas pelo CI, sem backend hospedado. O código
-          roda inteiro na sua máquina com Docker Compose.
+          A demonstração fala com o backend hospedado quando ele está no ar e, fora disso, reproduz
+          execuções reais gravadas pelo CI. O código roda inteiro na sua máquina com Docker Compose.
         </p>
       </div>
 
