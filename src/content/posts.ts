@@ -74,6 +74,15 @@ const posts: readonly Post[] = [
     phase: 7,
     tags: ["IA", "LGPD", "Segurança", "Claude"],
   },
+  {
+    slug: "fase-8-direitos-do-titular",
+    title: "Fase 8: os dados de volta, a eliminação e a auditoria intacta",
+    description:
+      "Pedidos do titular atravessando seis serviços por eventos, um pacote com Bundle HL7 FHIR R4, crypto-shredding com uma chave por paciente e a cadeia de auditoria verificável depois de tudo.",
+    publishedAt: "2026-10-16",
+    phase: 8,
+    tags: ["LGPD", "FHIR", "Criptografia", "Sistemas distribuídos"],
+  },
 ];
 
 /** Posts do mais recente para o mais antigo; no mesmo dia, a fase mais avançada vem primeiro. */

@@ -22,6 +22,18 @@ import {
   type Span,
   type Trace,
   type Triage,
+  channelLabel,
+  countResources,
+  deadlineDays,
+  elapsedMs,
+  formatBytes,
+  formatRetainedUntil,
+  outcomeLabel,
+  requestKindLabel,
+  requestStatusLabel,
+  retentionActionLabel,
+  rightsServiceName,
+  type RightsRequest,
 } from "./painel";
 
 function span(overrides: Partial<Span> & Pick<Span, "spanId">): Span {
@@ -171,8 +183,9 @@ describe("rótulos e formatos", () => {
 describe("gravação publicada", () => {
   const json = JSON.stringify(recording);
 
-  it("tem data, commit e os cinco cenários", () => {
-    expect(recording.schema).toBe(2);
+  it("tem data, commit e os seis cenários", () => {
+    expect(recording.schema).toBe(3);
+    expect(recording.rights.erasure.completed.status).toBe("completed");
     expect(recording.triage.steps.length).toBeGreaterThan(0);
     expect(commitUrl(recording.commit)).toBeDefined();
     expect(recording.booking.trace.spans.length).toBeGreaterThan(0);
@@ -197,9 +210,11 @@ describe("gravação publicada", () => {
     expect(vault.phone).toMatch(/^\+55 •• •••••-••\d{2}$/);
     expect(vault.email).toMatch(/@example\.com$/);
     expect(json).not.toMatch(/\b\d{3}\.?\d{3}\.?\d{3}-?\d{2}\b/);
-    // Fora do cofre, o nome só aparece no que o paciente escreveu na queixa da triagem.
+    // Fora do cofre, o nome só aparece no que o paciente escreveu na queixa da triagem e no
+    // pacote que ele mesmo baixou (o Painel só confere se bate com o cofre, sem repetir).
     const withoutComplaints = JSON.stringify({
       ...recording,
+      rights: { ...recording.rights, package: { ...recording.rights.package, patientName: null } },
       triage: {
         ...recording.triage,
         steps: recording.triage.steps.map((step) => ({
@@ -236,6 +251,62 @@ describe("gravação publicada", () => {
       true,
     );
     expect(chain.intact).toBe(true);
+  });
+});
+
+describe("direitos do titular", () => {
+  it("a portabilidade passa pelos seis serviços e o pacote traz o Bundle FHIR", () => {
+    const { portability, package: pack } = recording.rights;
+    expect(portability.completed.services.map((s) => s.outcome)).toEqual(Array(6).fill("exported"));
+    expect(pack.files.map((f) => f.name).sort()).toEqual([
+      "dados.json",
+      "fhir-bundle.json",
+      "leia-me.html",
+    ]);
+    expect(new Set(pack.fhirResources)).toEqual(new Set(["Patient", "Appointment", "Consent"]));
+    expect(pack.reuseRefused).toBe(true);
+  });
+
+  it("a eliminação deixa o cofre ilegível, com comprovante versionado e a cadeia íntegra", () => {
+    const { erasure, evidence } = recording.rights;
+    expect(erasure.completed.receipt?.policyVersion).toMatch(/^\d{4}-\d{2}\.\d+$/);
+    expect(evidence.vaultReadable).toBe(false);
+    expect(evidence.vaultStatus).toBe(410);
+    expect(evidence.chain.intact).toBe(true);
+    expect(evidence.audit.some((e) => e.action === "patient.erased")).toBe(true);
+  });
+
+  it("traduz tipos, situações, respostas, ações e canais", () => {
+    expect(requestKindLabel("erasure")).toBe("Eliminação");
+    expect(requestKindLabel("x")).toBe("x");
+    expect(requestStatusLabel("denied")).toBe("Negado");
+    expect(requestStatusLabel("x")).toBe("x");
+    expect(outcomeLabel(null)).toBe("Aguardando");
+    expect(outcomeLabel("erased")).toBe("Aplicou a eliminação");
+    expect(outcomeLabel("x")).toBe("x");
+    expect(retentionActionLabel("destroyed")).toBe("Chave destruída");
+    expect(retentionActionLabel("x")).toBe("x");
+    expect(channelLabel("sms")).toBe("SMS");
+    expect(channelLabel(null)).toBe("nenhum canal");
+    expect(channelLabel("pombo")).toBe("pombo");
+    expect(rightsServiceName("patient-vault")).toBe("Cofre do paciente");
+    expect(serviceName("careflow-rights")).toBe("Pedidos do titular");
+  });
+
+  it("formata prazos, tamanhos, tempos e recursos", () => {
+    const request = {
+      receivedAt: "2026-10-16T12:00:00Z",
+      dueAt: "2026-10-31T12:00:00Z",
+    } as RightsRequest;
+    expect(deadlineDays(request)).toBe(15);
+    expect(formatBytes(512)).toBe("512 B");
+    expect(formatBytes(2048)).toBe("2 KB");
+    expect(elapsedMs("2026-10-16T12:00:00.000Z", "2026-10-16T12:00:00.250Z")).toBe(250);
+    expect(elapsedMs(null, "2026-10-16T12:00:00Z")).toBeUndefined();
+    expect(formatRetainedUntil(null, "retained")).toBe("sem prazo");
+    expect(formatRetainedUntil(null, "erased")).toBe("—");
+    expect(formatRetainedUntil("2031-10-16T12:00:00Z", "retained")).toMatch(/2031/);
+    expect(countResources(["Patient", "Consent", "Consent"])).toBe("Patient (1), Consent (2)");
   });
 });
 

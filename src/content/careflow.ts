@@ -30,7 +30,7 @@ export const careflow = {
     { name: "Agenda", description: "Horários por profissional e clínica, sem dupla reserva." },
     {
       name: "Cofre do paciente",
-      description: "Dados pessoais cifrados por campo, com chave por clínica.",
+      description: "Dados pessoais cifrados por campo, com chave por paciente.",
     },
     {
       name: "Consentimento",
@@ -45,6 +45,10 @@ export const careflow = {
       description: "WhatsApp, SMS e e-mail com fallback entre canais.",
     },
     { name: "Auditoria", description: "Trilha imutável de quem acessou qual dado e quando." },
+    {
+      name: "Pedidos do titular",
+      description: "Acesso, portabilidade com Bundle HL7 FHIR e eliminação por crypto-shredding.",
+    },
   ],
 } as const;
 
@@ -106,9 +110,10 @@ export const careflowPhases: readonly Phase[] = [
   },
   {
     number: 8,
-    title: "Direitos do titular e adaptador FHIR",
+    title: "Direitos do titular e Bundle HL7 FHIR",
     demonstrates: "Interoperabilidade e LGPD",
-    status: "planejada",
+    status: "concluida",
+    postSlug: "fase-8-direitos-do-titular",
   },
   {
     number: 9,

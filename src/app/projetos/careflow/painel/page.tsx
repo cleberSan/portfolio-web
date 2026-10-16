@@ -4,22 +4,28 @@ import { ExternalLink } from "@/components/external-link";
 import { PageHeader } from "@/components/page-header";
 import { LogList } from "@/components/painel/log-list";
 import { ResilienceReplay } from "@/components/painel/resilience-replay";
+import { RightsRequests } from "@/components/painel/rights-requests";
 import { TraceWaterfall } from "@/components/painel/trace-waterfall";
 import { TriageSteps } from "@/components/painel/triage-steps";
 import {
   buildWaterfall,
   commitUrl,
+  countResources,
+  formatBytes,
   formatMs,
   formatRecordedAt,
+  formatRetainedUntil,
   groupAudit,
   propagationMs,
   recording,
+  retentionActionLabel,
+  rightsServiceName,
   serviceName,
 } from "@/content/painel";
 import { pageMetadata } from "@/lib/metadata";
 
 const description =
-  "Uma execução real do CareFlow com um paciente sintético: o trace de uma reserva, o mesmo paciente visto por cada serviço, a revogação do consentimento propagando, o WhatsApp caindo com fallback para SMS e a triagem com IA sobre dados pseudonimizados, sempre confirmada por um profissional.";
+  "Uma execução real do CareFlow com um paciente sintético: o trace de uma reserva, o mesmo paciente visto por cada serviço, a revogação do consentimento propagando, o WhatsApp caindo com fallback para SMS, a triagem com IA sobre dados pseudonimizados e os direitos do titular, do pacote com os dados à eliminação com a auditoria íntegra.";
 
 export const metadata: Metadata = pageMetadata({
   title: "Painel de Privacidade e Resiliência",
@@ -33,12 +39,20 @@ const adrUrl =
 const triageAdrUrl =
   "https://github.com/cleberSan/careflow/blob/main/docs/adr/0011-triagem-com-ia-pseudonimizada.md";
 
+const rightsAdrUrl =
+  "https://github.com/cleberSan/careflow/blob/main/docs/adr/0012-direitos-do-titular-e-fhir.md";
+
+/** Ações da trilha que contam a história dos pedidos do titular. */
+const rightsActions =
+  /^(subject-request\.|identity-verification\.|patient\.erased|triage\.text-erased|audit\.retained-after-erasure|.+\.exported$)/;
+
 const scenarios = [
   { id: "reserva", title: "1. Uma reserva, um trace" },
   { id: "visoes", title: "2. O mesmo paciente em cada serviço" },
   { id: "revogacao", title: "3. Revogação do consentimento" },
   { id: "whatsapp", title: "4. WhatsApp fora do ar" },
   { id: "triagem", title: "5. Triagem com IA e o profissional no circuito" },
+  { id: "direitos", title: "6. Direitos do titular: os dados de volta e a eliminação" },
 ] as const;
 
 const statusNames: Readonly<Record<string, string>> = {
@@ -63,7 +77,11 @@ function label(names: Readonly<Record<string, string>>, value: string): string {
 }
 
 export default function PainelPage() {
-  const { patient, booking, views, resilience, triage, revocation } = recording;
+  const { patient, booking, views, resilience, triage, revocation, rights } = recording;
+  const receipt = rights.erasure.completed.receipt;
+  const rightsAudit = groupAudit(
+    rights.evidence.audit.filter((entry) => rightsActions.test(entry.action)),
+  );
   const triageAudit = groupAudit(triage.audit);
   const commit = commitUrl(recording.commit);
   const bookingTrace = buildWaterfall(booking.trace);
@@ -75,7 +93,7 @@ export default function PainelPage() {
 
   return (
     <div className="space-y-16">
-      <PageHeader title="Painel de Privacidade e Resiliência" eyebrow="CareFlow · Fases 6 e 7">
+      <PageHeader title="Painel de Privacidade e Resiliência" eyebrow="CareFlow · Fases 6 a 8">
         <p>{description}</p>
       </PageHeader>
 
@@ -388,16 +406,174 @@ export default function PainelPage() {
         </details>
       </section>
 
+      <section aria-labelledby="direitos" className="space-y-4">
+        <h2 id="direitos" className="text-2xl font-semibold tracking-tight">
+          {scenarios[5].title}
+        </h2>
+        <p className="text-muted leading-relaxed">
+          O mesmo paciente pede os próprios dados e, depois, a eliminação. Antes de qualquer coisa
+          sair, ele prova que é o dono do contato cadastrado com um código de uso único. O pedido
+          vai pelos eventos para os seis serviços que guardam algo dele e só termina quando todos
+          respondem. Na eliminação, o cofre destrói a chave do paciente e a trilha de auditoria
+          fica, com a cadeia verificável.
+        </p>
+        <RightsRequests flows={[rights.portability, rights.erasure]} />
+
+        <h3 className="text-lg font-semibold">O pacote que o paciente baixou</h3>
+        <dl className="grid gap-4 sm:grid-cols-2">
+          <div className="border-border space-y-1 rounded-lg border p-4">
+            <dt className="text-muted text-sm">Arquivos</dt>
+            <dd>
+              <ul className="space-y-1 text-sm">
+                {rights.package.files.map((file) => (
+                  <li key={file.name}>
+                    <code className="font-mono text-xs">{file.name}</code>,{" "}
+                    {formatBytes(file.bytes)}
+                  </li>
+                ))}
+              </ul>
+            </dd>
+          </div>
+          <div className="border-border space-y-1 rounded-lg border p-4">
+            <dt className="text-muted text-sm">Bundle HL7 FHIR R4</dt>
+            <dd className="text-sm" data-testid="recursos-fhir">
+              {countResources(rights.package.fhirResources)}
+            </dd>
+          </div>
+          <div className="border-border space-y-1 rounded-lg border p-4">
+            <dt className="text-muted text-sm">Seções no arquivo estruturado</dt>
+            <dd className="text-sm">{rights.package.sections.map(rightsServiceName).join(", ")}</dd>
+          </div>
+          <div className="border-border space-y-1 rounded-lg border p-4">
+            <dt className="text-muted text-sm">Link</dt>
+            <dd className="text-sm" data-testid="link-do-pacote">
+              15 minutos e uso único:{" "}
+              {rights.package.reuseRefused
+                ? "o mesmo link foi recusado na segunda vez."
+                : "a segunda tentativa não foi gravada."}{" "}
+              O nome no pacote{" "}
+              {rights.package.patientName === patient.vault.fullName
+                ? "confere com o do cofre"
+                : "não confere com o do cofre"}
+              .
+            </dd>
+          </div>
+        </dl>
+
+        <h3 className="text-lg font-semibold">Depois da eliminação</h3>
+        <p>
+          Leitura do paciente no cofre:{" "}
+          <strong data-testid="leitura-no-cofre">
+            {rights.evidence.vaultReadable
+              ? "ainda legível"
+              : `${rights.evidence.vaultStatus}, o cofre não lê mais o paciente`}
+          </strong>
+          . Cadeia de auditoria:{" "}
+          <strong>
+            {rights.evidence.chain.intact ? "íntegra" : "quebrada"},{" "}
+            {rights.evidence.chain.entriesVerified} entradas verificadas
+          </strong>
+          .
+        </p>
+        {receipt ? (
+          <div
+            role="region"
+            aria-label="Comprovante de eliminação"
+            tabIndex={0}
+            className="border-border overflow-x-auto rounded-lg border"
+          >
+            <table className="w-full min-w-[40rem] border-collapse text-left text-sm">
+              <caption className="text-muted px-3 py-2 text-left">
+                Comprovante de eliminação, política de retenção versão{" "}
+                <code className="font-mono text-xs">{receipt.policyVersion}</code>. Só contagens:
+                nenhum dado do paciente.
+              </caption>
+              <thead className="bg-surface">
+                <tr>
+                  <th scope="col" className="px-3 py-2 font-medium">
+                    Serviço
+                  </th>
+                  <th scope="col" className="px-3 py-2 font-medium">
+                    Item
+                  </th>
+                  <th scope="col" className="px-3 py-2 font-medium">
+                    O que aconteceu
+                  </th>
+                  <th scope="col" className="px-3 py-2 text-right font-medium">
+                    Registros
+                  </th>
+                  <th scope="col" className="px-3 py-2 font-medium">
+                    Fica até
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {receipt.lines.map((line) => (
+                  <tr key={line.item} className="border-border border-t align-top">
+                    <td className="px-3 py-2">{rightsServiceName(line.service)}</td>
+                    <td className="px-3 py-2">{line.description}</td>
+                    <td className="px-3 py-2">{retentionActionLabel(line.action)}</td>
+                    <td className="px-3 py-2 text-right font-mono text-xs">{line.records}</td>
+                    <td className="px-3 py-2">
+                      {formatRetainedUntil(line.retainedUntil, line.action)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : null}
+        <div
+          role="region"
+          aria-label="Pedidos do titular na trilha de auditoria"
+          tabIndex={0}
+          className="border-border overflow-x-auto rounded-lg border"
+        >
+          <table className="w-full min-w-[30rem] border-collapse text-left text-sm">
+            <caption className="text-muted px-3 py-2 text-left">
+              O que os dois pedidos deixaram na trilha do paciente, agrupado por ação.
+            </caption>
+            <thead className="bg-surface">
+              <tr>
+                <th scope="col" className="px-3 py-2 font-medium">
+                  Ação
+                </th>
+                <th scope="col" className="px-3 py-2 font-medium">
+                  Serviço
+                </th>
+                <th scope="col" className="px-3 py-2 text-right font-medium">
+                  Entradas
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {rightsAudit.map((group) => (
+                <tr key={group.action} className="border-border border-t">
+                  <td className="px-3 py-2 font-mono text-xs">{group.action}</td>
+                  <td className="px-3 py-2">{group.services.join(", ")}</td>
+                  <td className="px-3 py-2 text-right font-mono text-xs">{group.count}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <details className="space-y-3">
+          <summary className="cursor-pointer font-medium">Ver o trace da eliminação</summary>
+          <TraceWaterfall trace={rights.trace} label="Trace da eliminação" />
+          <LogList logs={rights.logs} label="Logs do trace da eliminação" />
+        </details>
+      </section>
+
       <section aria-labelledby="em-breve" className="space-y-4">
         <h2 id="em-breve" className="text-2xl font-semibold tracking-tight">
           Em breve
         </h2>
         <ul className="grid gap-4 sm:grid-cols-2">
           <li className="border-border rounded-lg border p-4">
-            <p className="font-semibold">Fase 8: direitos do titular</p>
+            <p className="font-semibold">Fase 9: carga, infraestrutura e deploy</p>
             <p className="text-muted mt-1 text-sm leading-relaxed">
-              Acesso, portabilidade e eliminação dos dados, seguindo o paciente por todos os
-              serviços.
+              Testes de carga, infraestrutura como código e deploy com canary, para o backend rodar
+              fora do CI.
             </p>
           </li>
         </ul>
@@ -411,17 +587,23 @@ export default function PainelPage() {
           Como foi gravado
         </h2>
         <p className="text-muted leading-relaxed">
-          Um teste de ponta a ponta do CareFlow sobe os seis serviços e o Demo com PostgreSQL e
-          RabbitMQ reais e percorre os cinco cenários com um paciente sintético. A triagem não chama
+          Um teste de ponta a ponta do CareFlow sobe os sete serviços e o Demo com PostgreSQL e
+          RabbitMQ reais e percorre os seis cenários com um paciente sintético. A triagem não chama
           o modelo no CI: ela reproduz respostas gravadas, e sem gravação o modelo aparece como
-          indisponível. O CI publica o resultado como artefato, e o site reproduz esse arquivo.
-          Hospedar o backend ao vivo fica para a fase 9. As decisões estão no{" "}
+          indisponível. O código de confirmação dos pedidos vai para um provedor simulado, e o
+          Painel lê a mensagem numa caixa de entrada que só existe fora de produção. O CI publica o
+          resultado como artefato, e o site reproduz esse arquivo. Hospedar o backend ao vivo fica
+          para a fase 9. As decisões estão no{" "}
           <ExternalLink href={adrUrl} className="text-accent underline underline-offset-4">
             ADR-0010
-          </ExternalLink>{" "}
-          e no{" "}
+          </ExternalLink>
+          , no{" "}
           <ExternalLink href={triageAdrUrl} className="text-accent underline underline-offset-4">
             ADR-0011
+          </ExternalLink>{" "}
+          e no{" "}
+          <ExternalLink href={rightsAdrUrl} className="text-accent underline underline-offset-4">
+            ADR-0012
           </ExternalLink>
           , e o processo está nos posts das{" "}
           <Link
@@ -429,13 +611,20 @@ export default function PainelPage() {
             className="text-accent underline underline-offset-4"
           >
             fase 6
-          </Link>{" "}
-          e{" "}
+          </Link>
+          ,{" "}
           <Link
             href="/diario/fase-7-triagem-com-ia"
             className="text-accent underline underline-offset-4"
           >
             fase 7
+          </Link>{" "}
+          e{" "}
+          <Link
+            href="/diario/fase-8-direitos-do-titular"
+            className="text-accent underline underline-offset-4"
+          >
+            fase 8
           </Link>
           .
         </p>
