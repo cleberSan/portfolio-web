@@ -1,0 +1,88 @@
+## O problema
+
+Até a fase 7, o CareFlow guardava o mesmo paciente em seis lugares. O cofre tinha o cadastro cifrado, a agenda tinha as consultas, o Consentimento tinha as finalidades, as Notificações tinham os avisos, a triagem tinha as queixas e a Auditoria tinha a trilha de tudo isso. Nenhum serviço sabia responder pelos outros.
+
+A LGPD dá ao titular o direito de ver os próprios dados, de levá-los num formato que outro sistema leia e de pedir a eliminação. Cada um desses direitos precisa atravessar os seis serviços sem quebrar o que as fases anteriores garantiram: nenhum dado pessoal em evento, log ou telemetria, cada clínica isolada e a cadeia de auditoria verificável.
+
+A eliminação tem um conflito de fundo. O paciente pede para sumir, e a trilha de auditoria existe justamente para provar o que foi feito com ele.
+
+Tudo aqui é sintético e serve de demonstração. Os prazos de retenção são referência, não parecer jurídico.
+
+## Um serviço para os pedidos
+
+Os pedidos ganharam um serviço próprio, com o mesmo molde dos outros: banco com Row-Level Security por clínica, Outbox e Inbox, e a mesma redação de telemetria.
+
+Um pedido passa por quatro estados: recebido, em andamento, concluído ou negado com o motivo. O prazo de 15 dias aparece em toda resposta, e um pedido vencido aparece como atrasado.
+
+O pedido segue por eventos para os seis serviços e só termina quando todos respondem. Cada serviço monta a sua parte: a agenda manda as consultas, o Consentimento manda o histórico de cada concessão e revogação, a triagem manda as queixas e as decisões, e assim por diante.
+
+## Antes de qualquer coisa sair: o código
+
+Mandar os dados de alguém para quem pediu exige saber que quem pediu é o dono. O CareFlow não tem conta de paciente, então a prova é o contato já cadastrado: um código de 6 dígitos vai por SMS, WhatsApp ou e-mail, na ordem de canais da clínica.
+
+O código atravessa o sistema de um jeito que pouca gente percebe que importa. Ele sai do serviço de pedidos num evento, e eventos ficam guardados por dias no Outbox, no broker e no Inbox. Um código válido em claro ali seria uma porta.
+
+Por isso ele viaja cifrado para a chave pública das Notificações, que abrem só em memória na hora de enviar. O serviço de pedidos guarda só um HMAC para conferir. O código vale 10 minutos e aceita 5 tentativas.
+
+Na demonstração, o envio vai para um provedor simulado, e o Painel lê a mensagem numa caixa de entrada que só existe fora de produção. A aplicação recusa subir em produção com ela ligada.
+
+## O pacote
+
+Com as seis respostas, o serviço de pedidos monta um ZIP com três arquivos:
+
+- `leia-me.html`, para uma pessoa ler, com tudo escapado e uma CSP que não deixa rodar nada;
+- `dados.json`, estruturado, com uma seção por serviço;
+- `fhir-bundle.json`, um Bundle HL7 FHIR R4 com Patient, Appointment e Consent, o formato que sistemas de saúde entendem.
+
+O Bundle é montado com o Firely SDK, a referência em .NET, com licença BSD-3. Os testes validam cada Bundle contra os perfis base do R4. Montar o JSON à mão era possível, mas um Bundle inválido passaria em silêncio.
+
+As seções viajam cifradas para uma chave criada só para aquele pedido, e o pacote fica guardado cifrado por 7 dias. Na expiração, a chave do pacote é destruída. O link de download vale 15 minutos e funciona uma vez. O token vai no corpo de um POST, não na URL, para não ficar em histórico, log de proxy ou cabeçalho Referer.
+
+## Eliminar sem apagar a prova
+
+No cofre, a eliminação é crypto-shredding: cada paciente agora tem a própria chave, e eliminar destrói essa chave. O cifrado continua no banco, ilegível, e o mesmo vale para qualquer backup que não tenha a chave. Apagar a linha não alcançaria os backups.
+
+Os outros serviços seguem uma política de retenção fixa e versionada, igual para todas as clínicas:
+
+- a agenda cancela as consultas futuras e mantém as passadas por 5 anos, para defesa em processo;
+- o Consentimento mantém o histórico, que é a prova do consentimento;
+- as Notificações não enviam os avisos pendentes e apagam a referência ao provedor;
+- a triagem apaga a queixa e mantém a decisão do profissional;
+- a Auditoria não tira nada da trilha, que já só tem pseudônimos.
+
+Cada eliminação devolve um comprovante com a versão da política e uma linha por item: o que aconteceu, quantos registros e até quando ficam. Mudar um prazo é uma versão nova da política, nunca uma edição.
+
+O conflito com a auditoria se resolve porque a trilha nunca guardou o paciente, só o pseudônimo. Os testes eliminam o paciente e verificam a cadeia HMAC inteira de novo: ela continua íntegra.
+
+## E se alguém restaurar um backup?
+
+Crypto-shredding tem um ponto fraco: um backup do cofre feito antes da eliminação ainda tem a chave do paciente. Restaurar esse backup traz o paciente de volta.
+
+O teste de ponta a ponta faz exatamente isso. Ele guarda as linhas do paciente antes da eliminação, elimina, confere que o cofre responde 410 e restaura as linhas como uma restauração de backup faria. O cofre volta a ler o paciente. Um administrador então reaplica as eliminações concluídas, e o cofre volta a responder 410, com a cadeia íntegra.
+
+Esse passo precisa estar no procedimento de restauração. O sistema não tem como saber sozinho que um backup voltou.
+
+## O que os testes encontraram
+
+- **Uma pasta que o Git ignorava:** o código do pacote ficava numa pasta chamada `Packages`, e o `.gitignore` padrão de .NET ignora qualquer pasta com esse nome. O build local passava, e o commit saía sem o código. A pasta virou `Exports`.
+- **Um código de 6 dígitos parece um número qualquer:** a varredura de telemetria procura cada dado sensível em tudo o que foi exportado. Seis dígitos aparecem por acaso dentro de IDs hexadecimais de trace. A varredura passou a procurar o texto da mensagem com o código, que nunca aparece por acaso.
+- **O pacote de especificação FHIR não chegava aos testes:** a validação precisa dos perfis base do R4, que vêm num arquivo dentro de outro pacote. O arquivo só é copiado quando o pacote é referenciado direto pelo projeto de testes.
+
+## No Painel
+
+O [Painel](/projetos/careflow/painel#direitos) ganhou o sexto cenário, gravado contra o sistema inteiro com o mesmo paciente dos outros cinco:
+
+- o pedido de portabilidade, com o código chegando na caixa de entrada simulada, a resposta de cada serviço e o pacote baixado, com o mesmo link recusado na segunda vez;
+- o pedido de eliminação, com o comprovante, o cofre respondendo 410 e a trilha íntegra;
+- o trace da eliminação passando pelos oito serviços.
+
+## Trade-offs aceitos
+
+- O código vai para o contato cadastrado. Quem controla o chip ou a conta do paciente controla o pedido. Com pacientes reais, a eliminação pode pedir um segundo fator.
+- A política diz até quando cada item fica, mas nenhuma rotina apaga o que venceu. Isso fica para depois.
+- A chave do serviço de pedidos ainda não rotaciona. Trocá-la torna ilegíveis os pacotes guardados, o que é aceitável para algo que vive 7 dias.
+- A migração para chave por paciente roda em lotes, com o cofre no ar, mas só depois que todas as instâncias estiverem na versão nova. As decisões estão no [ADR-0012](https://github.com/cleberSan/careflow/blob/main/docs/adr/0012-direitos-do-titular-e-fhir.md).
+
+## Próximo passo
+
+A fase 9 leva o CareFlow para fora do CI: testes de carga, infraestrutura como código e deploy com canary. Antes desta, a [fase 7](/diario/fase-7-triagem-com-ia) conta como a triagem com IA trata o dado pessoal antes do modelo.

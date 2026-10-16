@@ -1,8 +1,8 @@
 import gravacao from "./painel/gravacao.json";
 
 /**
- * Gravação real dos cinco cenários do Painel, feita pelo teste `PanelRecordingTests` do
- * CareFlow contra o sistema inteiro (ADR-0010 e ADR-0011 do CareFlow). O site só reproduz: nada aqui é
+ * Gravação real dos seis cenários do Painel, feita pelo teste `PanelRecordingTests` do
+ * CareFlow contra o sistema inteiro (ADR-0010, ADR-0011 e ADR-0012 do CareFlow). O site só reproduz: nada aqui é
  * simulado. Para atualizar, troque `gravacao.json` pelo artefato `panel-recording` do CI.
  */
 
@@ -136,6 +136,75 @@ export type TriageScenario = {
   logs: readonly LogLine[];
 };
 
+export type RightsService = { service: string; outcome: string | null; answeredAt: string | null };
+
+export type ReceiptLine = {
+  service: string;
+  item: string;
+  description: string;
+  action: string;
+  records: number;
+  retainedUntil: string | null;
+  basis: string;
+};
+
+export type RightsRequest = {
+  id: string;
+  kind: string;
+  status: string;
+  denialReason: string | null;
+  receivedAt: string;
+  dueAt: string;
+  overdue: boolean;
+  codeSentAt: string | null;
+  codeChannel: string | null;
+  identityConfirmedAt: string | null;
+  completedAt: string | null;
+  services: readonly RightsService[];
+  receipt: { policyVersion: string; erasedAt: string; lines: readonly ReceiptLine[] } | null;
+  package: {
+    available: boolean;
+    size: number;
+    createdAt: string;
+    expiresAt: string;
+    destroyedAt: string | null;
+  } | null;
+  traceId: string | null;
+};
+
+export type InboxMessage = { channel: string; text: string; acceptedAt: string };
+
+export type RightsFlow = {
+  opened: RightsRequest;
+  inbox: readonly InboxMessage[];
+  confirmed: RightsRequest;
+  completed: RightsRequest;
+};
+
+export type PackageContents = {
+  files: readonly { name: string; bytes: number }[];
+  sections: readonly string[];
+  fhirResources: readonly string[];
+  patientName: string | null;
+  linkExpiresAt: string | null;
+  reuseRefused: boolean;
+  traceId: string;
+};
+
+export type RightsScenario = {
+  portability: RightsFlow;
+  package: PackageContents;
+  erasure: RightsFlow;
+  evidence: {
+    vaultReadable: boolean;
+    vaultStatus: number;
+    audit: readonly AuditEntry[];
+    chain: Chain;
+  };
+  trace: Trace;
+  logs: readonly LogLine[];
+};
+
 export type PanelRecording = {
   schema: number;
   recordedAt: string;
@@ -171,6 +240,7 @@ export type PanelRecording = {
     trace: Trace;
     logs: readonly LogLine[];
   };
+  rights: RightsScenario;
 };
 
 export const recording = gravacao as unknown as PanelRecording;
@@ -189,6 +259,7 @@ const serviceNames: Readonly<Record<string, string>> = {
   "careflow-notifications": "Notificações",
   "careflow-audit": "Auditoria",
   "careflow-triage": "Triagem",
+  "careflow-rights": "Pedidos do titular",
 };
 
 export function serviceName(service: string): string {
@@ -419,4 +490,101 @@ export function reviewLabel(triage: Triage): string {
     return `Corrigiu para: ${priorityLabel(triage.finalPriority)}`;
   }
   return "Pendente";
+}
+
+/** Nome do serviço a partir do identificador usado nos pedidos do titular (`patient-vault`). */
+export function rightsServiceName(service: string): string {
+  return serviceName(`careflow-${service}`);
+}
+
+const requestKindLabels: Readonly<Record<string, string>> = {
+  access: "Acesso",
+  portability: "Portabilidade",
+  erasure: "Eliminação",
+};
+
+export function requestKindLabel(kind: string): string {
+  return requestKindLabels[kind] ?? kind;
+}
+
+const requestStatusLabels: Readonly<Record<string, string>> = {
+  received: "Recebido",
+  "in-progress": "Em andamento",
+  completed: "Concluído",
+  denied: "Negado",
+};
+
+export function requestStatusLabel(status: string): string {
+  return requestStatusLabels[status] ?? status;
+}
+
+const outcomeLabels: Readonly<Record<string, string>> = {
+  exported: "Enviou a seção",
+  erased: "Aplicou a eliminação",
+  "subject-not-found": "Paciente não encontrado",
+};
+
+export function outcomeLabel(outcome: string | null): string {
+  return outcome === null ? "Aguardando" : (outcomeLabels[outcome] ?? outcome);
+}
+
+const retentionActionLabels: Readonly<Record<string, string>> = {
+  destroyed: "Chave destruída",
+  erased: "Apagado",
+  cancelled: "Cancelado",
+  retained: "Mantido",
+};
+
+export function retentionActionLabel(action: string): string {
+  return retentionActionLabels[action] ?? action;
+}
+
+const channelLabels: Readonly<Record<string, string>> = {
+  sms: "SMS",
+  whatsapp: "WhatsApp",
+  email: "e-mail",
+};
+
+export function channelLabel(channel: string | null): string {
+  return channel === null ? "nenhum canal" : (channelLabels[channel] ?? channel);
+}
+
+/** Milissegundos entre dois instantes da gravação, ou `undefined` se faltar algum. */
+export function elapsedMs(from: string | null, to: string | null): number | undefined {
+  if (!from || !to) {
+    return undefined;
+  }
+  return Math.max(0, Date.parse(to) - Date.parse(from));
+}
+
+const days = new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 0 });
+
+/** Prazo em dias inteiros entre o recebimento e o vencimento. */
+export function deadlineDays(request: RightsRequest): number {
+  return Math.round((Date.parse(request.dueAt) - Date.parse(request.receivedAt)) / 86_400_000);
+}
+
+const bytes = new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 1 });
+
+export function formatBytes(value: number): string {
+  return value < 1024 ? `${days.format(value)} B` : `${bytes.format(value / 1024)} KB`;
+}
+
+const date = new Intl.DateTimeFormat("pt-BR", { dateStyle: "medium", timeZone: "UTC" });
+
+/** "16 de out. de 2031" ou "sem prazo" (fica enquanto a cadeia existir). */
+export function formatRetainedUntil(value: string | null, action: string): string {
+  if (value) {
+    return date.format(new Date(value));
+  }
+  return action === "retained" ? "sem prazo" : "—";
+}
+
+/** Recursos do Bundle FHIR com a contagem: "Patient (1), Appointment (4), Consent (3)". */
+export function countResources(resources: readonly string[]): string {
+  const counts = new Map<string, number>();
+  for (const resource of resources) {
+    counts.set(resource, (counts.get(resource) ?? 0) + 1);
+  }
+  return [...counts].map(([resource, count]) => `${resource} (${count})`).join(", ");
 }

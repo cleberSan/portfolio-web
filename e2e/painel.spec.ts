@@ -61,7 +61,33 @@ test.describe("Painel de Privacidade e Resiliência", () => {
     await expect(page.getByRole("region", { name: "Trace da triagem", exact: true })).toBeVisible();
   });
 
-  test("abre os traces e logs gravados e mostra a fase 8 como em breve", async ({ page }) => {
+  test("mostra os pedidos do titular, o pacote e a eliminação com a cadeia íntegra", async ({
+    page,
+  }) => {
+    // Arrange
+    await page.goto("/projetos/careflow/painel#direitos");
+
+    // Act
+    await page.getByText("Ver o trace da eliminação").click();
+
+    // Assert
+    await expect(
+      page.getByRole("heading", { level: 2, name: /Direitos do titular/ }),
+    ).toBeVisible();
+    await expect(page.getByTestId("situacao-do-pedido")).toHaveText(["Concluído", "Concluído"]);
+    await expect(page.getByTestId("caixa-de-entrada").first()).toContainText(
+      "seu código para confirmar",
+    );
+    await expect(page.getByTestId("recursos-fhir")).toContainText("Patient (1)");
+    await expect(page.getByTestId("link-do-pacote")).toContainText("recusado na segunda vez");
+    await expect(page.getByTestId("leitura-no-cofre")).toContainText("410");
+    await expect(page.getByRole("region", { name: "Comprovante de eliminação" })).toBeVisible();
+    await expect(
+      page.getByRole("region", { name: "Trace da eliminação", exact: true }),
+    ).toBeVisible();
+  });
+
+  test("abre os traces e logs gravados e mostra a fase 9 como em breve", async ({ page }) => {
     // Arrange
     await page.goto("/projetos/careflow/painel");
 
@@ -73,6 +99,6 @@ test.describe("Painel de Privacidade e Resiliência", () => {
     await expect(page.getByRole("region", { name: "Logs do trace da reserva" })).toBeVisible();
     await expect(page.getByRole("region", { name: "Trace da revogação" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Em breve" })).toBeVisible();
-    await expect(page.getByText("Fase 8: direitos do titular")).toBeVisible();
+    await expect(page.getByText("Fase 9: carga, infraestrutura e deploy")).toBeVisible();
   });
 });

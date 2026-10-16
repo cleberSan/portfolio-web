@@ -55,8 +55,8 @@ export default function CareFlowPage() {
         <p className="text-muted leading-relaxed">
           O Painel de Privacidade e Resiliência reproduz uma execução real do sistema com um
           paciente sintético: o trace de uma reserva, o mesmo paciente em cada serviço, a revogação
-          do consentimento propagando, o WhatsApp caindo com fallback para SMS e a triagem com IA
-          sobre dados pseudonimizados.
+          do consentimento propagando, o WhatsApp caindo com fallback para SMS, a triagem com IA
+          sobre dados pseudonimizados e os direitos do titular, do pacote com os dados à eliminação.
         </p>
         <p>
           <Link
@@ -98,7 +98,7 @@ export default function CareFlowPage() {
         <p className="text-muted leading-relaxed">
           A arquitetura alvo usa microsserviços em .NET 10, um banco PostgreSQL por serviço e
           comunicação por eventos com Outbox/Inbox. Agenda, cofre, consentimento, notificações,
-          auditoria e triagem com IA já estão implementados.
+          auditoria, triagem com IA e pedidos do titular já estão implementados.
         </p>
         <dl className="grid gap-4 sm:grid-cols-2">
           {careflow.services.map((service) => (
