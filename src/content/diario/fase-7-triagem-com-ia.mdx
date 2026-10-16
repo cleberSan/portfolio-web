@@ -59,13 +59,22 @@ O modelo é o Claude Haiku 5.5, chamado pelo SDK oficial em C# (MIT). O CI não 
 
 A avaliação roda em todo build com 57 casos sintéticos e publica as métricas como artefato. O mesmo conjunto alimenta o Painel, então o pedido gravado é idêntico ao que o Painel envia.
 
-Algumas barreiras valem sempre, com ou sem gravação. Os números da execução deste commit:
+Os números com as 47 respostas gravadas do modelo:
 
-- **Alarmes:** 21 de 21 casos detectados e nenhum rebaixado.
+- **Acerto:** 76,6% exato e 93,6% com uma faixa de tolerância.
+- **Subtriagem:** 8,5%. São 4 casos: só um recebeu sugestão abaixo da esperada; nos outros três não houve sugestão e o profissional decidiu. Eles contam contra o modelo de propósito, para que um guardrail frouxo não pareça acerto.
+- **Recusas:** nenhuma.
+- **Alarmes:** 21 de 21 casos detectados e nenhum rebaixado. Num deles, o modelo sugeriu "urgente" e as regras subiram para "emergência".
 - **Injeção:** 7 de 7 ataques marcados como bloqueáveis barrados antes do modelo. Os 3 que passaram de propósito não terminaram abaixo da prioridade esperada.
 - **Dados pessoais:** 9 casos recheados, 23 trechos mascarados, 3 queixas retidas por excesso de mascaramento e nenhum vazamento.
 
-Acerto e taxa de recusa ainda não estão publicados. Eles dependem das primeiras gravações do modelo, que ainda não foram feitas. Até lá, o Painel mostra o modelo como indisponível e as regras sustentando a prioridade. Prefiro isso a inventar uma resposta.
+## O que a primeira gravação mostrou
+
+A primeira rodada com o modelo de verdade acertou bem a prioridade, mas sete justificativas aceitas falavam em doença como hipótese: "compatíveis com um possível AVC", "sugere possível fratura", "descartar lesão intracraniana". O prompt já dizia para não nomear doenças, e a regra que barra diagnóstico não pegava o plural de "compatível" nem um nome de condição solto na frase.
+
+A correção foi nas duas pontas. A regra passou a barrar qualquer condição nomeada, com as frases reais como teste de regressão, e o prompt passou a proibir hipóteses de forma explícita. Na regravação, nenhuma justificativa nomeou doença. Ela também mostrou um falso positivo ("consegue ingerir água" lido como orientação), que virou outro teste.
+
+É o argumento para gravar respostas reais e revisar cada uma antes do commit: a instrução já proibia nomear doenças, o modelo contornou com "possível", e só o texto real mostrou como.
 
 A avaliação também mostrou dois limites que ficaram registrados:
 
