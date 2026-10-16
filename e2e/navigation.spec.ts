@@ -51,6 +51,18 @@ test("a home leva ao projeto CareFlow", async ({ page }) => {
   await expect(page.getByRole("note")).toContainText("dados sintéticos");
 });
 
+test("a página do CareFlow leva à demonstração", async ({ page }) => {
+  // Arrange
+  await page.goto("/projetos/careflow");
+
+  // Act
+  await page.getByRole("link", { name: "Ver demonstração" }).click();
+
+  // Assert
+  await expect(page).toHaveURL(/\/projetos\/careflow\/painel$/);
+  await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+});
+
 test("links externos abrem em nova aba sem window.opener", async ({ page }) => {
   // Arrange
   await page.goto("/sobre");
