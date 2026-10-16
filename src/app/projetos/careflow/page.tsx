@@ -19,6 +19,27 @@ export default function CareFlowPage() {
         <p>{careflow.tagline}</p>
       </PageHeader>
 
+      <div className="space-y-3">
+        <div className="flex flex-wrap gap-4">
+          <Link
+            href="/projetos/careflow/painel"
+            className="bg-foreground text-background rounded-md px-5 py-2.5 font-medium hover:opacity-90"
+          >
+            Ver demonstração
+          </Link>
+          <ExternalLink
+            href={careflow.repository}
+            className="border-border hover:bg-surface rounded-md border px-5 py-2.5 font-medium"
+          >
+            Ver código
+          </ExternalLink>
+        </div>
+        <p className="text-muted text-sm leading-relaxed">
+          A demonstração reproduz execuções reais gravadas pelo CI, sem backend hospedado. O código
+          roda inteiro na sua máquina com Docker Compose.
+        </p>
+      </div>
+
       <p
         role="note"
         className="border-accent bg-surface rounded-md border-l-4 px-4 py-3 text-sm leading-relaxed"
@@ -34,7 +55,8 @@ export default function CareFlowPage() {
         <p className="text-muted leading-relaxed">
           O Painel de Privacidade e Resiliência reproduz uma execução real do sistema com um
           paciente sintético: o trace de uma reserva, o mesmo paciente em cada serviço, a revogação
-          do consentimento propagando e o WhatsApp caindo com fallback para SMS.
+          do consentimento propagando, o WhatsApp caindo com fallback para SMS e a triagem com IA
+          sobre dados pseudonimizados.
         </p>
         <p>
           <Link
@@ -75,8 +97,8 @@ export default function CareFlowPage() {
         </h2>
         <p className="text-muted leading-relaxed">
           A arquitetura alvo usa microsserviços em .NET 10, um banco PostgreSQL por serviço e
-          comunicação por eventos com Outbox/Inbox. Agenda, cofre, consentimento, notificações e
-          auditoria já estão implementados; a triagem entra na fase 7.
+          comunicação por eventos com Outbox/Inbox. Agenda, cofre, consentimento, notificações,
+          auditoria e triagem com IA já estão implementados.
         </p>
         <dl className="grid gap-4 sm:grid-cols-2">
           {careflow.services.map((service) => (

@@ -37,6 +37,20 @@ describe("CareFlowPage", () => {
     expect(screen.getByRole("note")).toHaveTextContent(/dados sintéticos/);
   });
 
+  it("destaca a demonstração e o código no topo da página", () => {
+    // Act
+    render(<CareFlowPage />);
+
+    // Assert
+    const demo = screen.getByRole("link", { name: "Ver demonstração" });
+    const code = screen.getByRole("link", { name: /^Ver código/ });
+    expect(demo).toHaveAttribute("href", "/projetos/careflow/painel");
+    expect(code).toHaveAttribute("href", careflow.repository);
+    expect(code).toHaveAttribute("target", "_blank");
+    const roadmap = screen.getByRole("region", { name: "Roadmap" });
+    expect(demo.compareDocumentPosition(roadmap) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
   it("mostra todas as fases do roadmap em ordem com o status", () => {
     // Act
     render(<CareFlowPage />);
