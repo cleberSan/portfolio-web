@@ -1,8 +1,8 @@
 import gravacao from "./painel/gravacao.json";
 
 /**
- * Gravação real dos quatro cenários do Painel, feita pelo teste `PanelRecordingTests` do
- * CareFlow contra o sistema inteiro (ADR-0010 do CareFlow). O site só reproduz: nada aqui é
+ * Gravação real dos cinco cenários do Painel, feita pelo teste `PanelRecordingTests` do
+ * CareFlow contra o sistema inteiro (ADR-0010 e ADR-0011 do CareFlow). O site só reproduz: nada aqui é
  * simulado. Para atualizar, troque `gravacao.json` pelo artefato `panel-recording` do CI.
  */
 
@@ -58,6 +58,8 @@ export type AuditEntry = {
   sourceService: string;
   action: string;
   resourceType: string;
+  /** SHA-256 do pedido que saiu para o modelo, quando a entrada registra essa saída (fase 7). */
+  contentDigest?: string | null;
 };
 
 export type Chain = { intact: boolean; entriesVerified: number; lastSequence: number };
@@ -92,6 +94,48 @@ export type ResilienceStep = {
   notification: Notice | null;
 };
 
+export type Triage = {
+  id: string;
+  complaint: string;
+  ageBand: string;
+  sentToModel: string | null;
+  promptDigest: string | null;
+  promptVersion: string | null;
+  modelName: string | null;
+  modelStatus: string;
+  modelPriority: string | null;
+  suggestedPriority: string | null;
+  source: string;
+  rationale: string | null;
+  guardrails: readonly string[];
+  alarmSigns: readonly string[];
+  masks: Readonly<Record<string, number>>;
+  decision: string;
+  finalPriority: string | null;
+  reviewedAt: string | null;
+  traceId: string;
+};
+
+export type TriageStep = {
+  scenario: string;
+  case: string;
+  complaint: string;
+  submitted: Triage;
+  reviewed: Triage;
+};
+
+export type TriageScenario = {
+  model: string;
+  steps: readonly TriageStep[];
+  consentBefore: { state: string; version: number };
+  revocation: { traceId: string };
+  consentAfter: { state: string; version: number };
+  audit: readonly AuditEntry[];
+  chain: Chain;
+  trace: Trace;
+  logs: readonly LogLine[];
+};
+
 export type PanelRecording = {
   schema: number;
   recordedAt: string;
@@ -119,6 +163,7 @@ export type PanelRecording = {
     logs: readonly LogLine[];
   };
   resilience: { steps: readonly ResilienceStep[]; fallbackTrace: Trace };
+  triage: TriageScenario;
   revocation: {
     action: { traceId: string };
     before: Propagation;
@@ -143,6 +188,7 @@ const serviceNames: Readonly<Record<string, string>> = {
   "careflow-consent": "Consentimento",
   "careflow-notifications": "Notificações",
   "careflow-audit": "Auditoria",
+  "careflow-triage": "Triagem",
 };
 
 export function serviceName(service: string): string {
@@ -297,4 +343,80 @@ const dateTime = new Intl.DateTimeFormat("pt-BR", {
 /** Data e hora em UTC, para o texto não mudar com o fuso de quem faz o build. */
 export function formatRecordedAt(value: string): string {
   return `${dateTime.format(new Date(value))} (UTC)`;
+}
+
+const priorityLabels: Readonly<Record<string, string>> = {
+  emergency: "Emergência",
+  urgent: "Urgente",
+  "less-urgent": "Pouco urgente",
+  "non-urgent": "Não urgente",
+};
+
+export function priorityLabel(priority: string | null): string {
+  return priority === null ? "Sem sugestão" : (priorityLabels[priority] ?? priority);
+}
+
+const modelStatusLabels: Readonly<Record<string, string>> = {
+  accepted: "Resposta do modelo aceita",
+  unavailable: "Modelo indisponível: sem resposta gravada para este pedido",
+  refused: "O modelo recusou responder",
+  "rejected-schema": "Resposta fora do schema, descartada",
+  "rejected-clinical-language": "Justificativa com linguagem clínica, descartada",
+  "skipped-no-consent": "Não enviada: sem consentimento para triagem com IA",
+  "skipped-injection": "Não enviada: tentativa de manipular a IA",
+  "skipped-over-masked": "Não enviada: quase tudo era dado pessoal",
+};
+
+export function modelStatusLabel(status: string): string {
+  return modelStatusLabels[status] ?? status;
+}
+
+const sourceLabels: Readonly<Record<string, string>> = {
+  model: "do modelo",
+  "model-raised-by-rules": "do modelo, elevada por regra de alarme",
+  rules: "das regras de alarme",
+  none: "nenhuma: o profissional define",
+};
+
+export function sourceLabel(source: string): string {
+  return sourceLabels[source] ?? source;
+}
+
+const guardrailKinds: Readonly<Record<string, string>> = {
+  alarm: "Alarme",
+  injection: "Manipulação barrada",
+  schema: "Schema",
+  "clinical-language": "Linguagem clínica",
+  masking: "Mascaramento",
+  consent: "Consentimento",
+  provider: "Provedor",
+};
+
+/** `alarm:falta-de-ar` vira "Alarme: falta de ar". */
+export function guardrailLabel(guardrail: string): string {
+  const [kind, ...rest] = guardrail.split(":");
+  const code = rest.join(":").replaceAll("-", " ");
+  return code ? `${guardrailKinds[kind] ?? kind}: ${code}` : (guardrailKinds[kind] ?? kind);
+}
+
+const triageScenarioLabels: Readonly<Record<string, string>> = {
+  "dados-pessoais": "Dados pessoais mascarados antes do modelo",
+  "sinal-de-alarme": "Sinal de alarme sobe a prioridade",
+  "tentativa-de-manipulacao": "Tentativa de manipular a IA",
+  "sem-consentimento": "Depois da revogação do consentimento para IA",
+};
+
+export function triageScenarioLabel(scenario: string): string {
+  return triageScenarioLabels[scenario] ?? scenario;
+}
+
+/** "Confirmou: Emergência" ou "Corrigiu para: Não urgente". */
+export function reviewLabel(triage: Triage): string {
+  if (triage.decision === "confirmed") {
+    return `Confirmou: ${priorityLabel(triage.finalPriority)}`;
+  }
+  if (triage.decision === "corrected") {
+    return `Corrigiu para: ${priorityLabel(triage.finalPriority)}`;
+  }
+  return "Pendente";
 }

@@ -6,6 +6,12 @@ import {
   formatMs,
   formatRecordedAt,
   groupAudit,
+  guardrailLabel,
+  modelStatusLabel,
+  priorityLabel,
+  reviewLabel,
+  sourceLabel,
+  triageScenarioLabel,
   propagationMs,
   recording,
   serviceName,
@@ -15,6 +21,7 @@ import {
   type Propagation,
   type Span,
   type Trace,
+  type Triage,
 } from "./painel";
 
 function span(overrides: Partial<Span> & Pick<Span, "spanId">): Span {
@@ -164,8 +171,9 @@ describe("rótulos e formatos", () => {
 describe("gravação publicada", () => {
   const json = JSON.stringify(recording);
 
-  it("tem data, commit e os quatro cenários", () => {
-    expect(recording.schema).toBe(1);
+  it("tem data, commit e os cinco cenários", () => {
+    expect(recording.schema).toBe(2);
+    expect(recording.triage.steps.length).toBeGreaterThan(0);
     expect(commitUrl(recording.commit)).toBeDefined();
     expect(recording.booking.trace.spans.length).toBeGreaterThan(0);
     expect(recording.resilience.steps.length).toBeGreaterThan(0);
@@ -189,6 +197,96 @@ describe("gravação publicada", () => {
     expect(vault.phone).toMatch(/^\+55 •• •••••-••\d{2}$/);
     expect(vault.email).toMatch(/@example\.com$/);
     expect(json).not.toMatch(/\b\d{3}\.?\d{3}\.?\d{3}-?\d{2}\b/);
-    expect(json.split(vault.fullName)).toHaveLength(2);
+    // Fora do cofre, o nome só aparece no que o paciente escreveu na queixa da triagem.
+    const withoutComplaints = JSON.stringify({
+      ...recording,
+      triage: {
+        ...recording.triage,
+        steps: recording.triage.steps.map((step) => ({
+          ...step,
+          complaint: "",
+          submitted: { ...step.submitted, complaint: "" },
+          reviewed: { ...step.reviewed, complaint: "" },
+        })),
+      },
+    });
+    expect(withoutComplaints.split(vault.fullName)).toHaveLength(2);
+    expect(withoutComplaints.split(vault.email!)).toHaveLength(2);
+  });
+
+  it("na triagem, nada do paciente sai para o modelo e toda sugestão tem decisão humana", () => {
+    const { steps, audit, chain } = recording.triage;
+    const vault = recording.patient.vault;
+    for (const step of steps) {
+      expect(step.submitted.sentToModel ?? "").not.toContain(vault.fullName.split(" ").at(-1));
+      expect(step.submitted.sentToModel ?? "").not.toContain(vault.email!);
+      expect(["confirmed", "corrected"]).toContain(step.reviewed.decision);
+    }
+    expect(steps.map((step) => step.scenario)).toEqual([
+      "dados-pessoais",
+      "sinal-de-alarme",
+      "tentativa-de-manipulacao",
+      "sem-consentimento",
+    ]);
+    expect(steps[0].submitted.sentToModel).toContain("[nome]");
+    expect(steps[1].reviewed.finalPriority).toBe("emergency");
+    expect(steps[2].submitted.sentToModel).toBeNull();
+    expect(steps[3].submitted.modelStatus).toBe("skipped-no-consent");
+    expect(audit.some((entry) => entry.contentDigest === steps[0].submitted.promptDigest)).toBe(
+      true,
+    );
+    expect(chain.intact).toBe(true);
+  });
+});
+
+describe("rótulos da triagem", () => {
+  function triage(overrides: Partial<Triage>): Triage {
+    return {
+      id: "t",
+      complaint: "",
+      ageBand: "18-39",
+      sentToModel: null,
+      promptDigest: null,
+      promptVersion: null,
+      modelName: null,
+      modelStatus: "accepted",
+      modelPriority: null,
+      suggestedPriority: null,
+      source: "none",
+      rationale: null,
+      guardrails: [],
+      alarmSigns: [],
+      masks: {},
+      decision: "pending",
+      finalPriority: null,
+      reviewedAt: null,
+      traceId: "x",
+      ...overrides,
+    };
+  }
+
+  it("traduz prioridades, estados, origens, proteções e cenários", () => {
+    expect(priorityLabel("less-urgent")).toBe("Pouco urgente");
+    expect(priorityLabel(null)).toBe("Sem sugestão");
+    expect(priorityLabel("outra")).toBe("outra");
+    expect(modelStatusLabel("skipped-injection")).toMatch(/manipular/);
+    expect(modelStatusLabel("novo")).toBe("novo");
+    expect(sourceLabel("model-raised-by-rules")).toMatch(/elevada por regra/);
+    expect(sourceLabel("x")).toBe("x");
+    expect(guardrailLabel("alarm:falta-de-ar")).toBe("Alarme: falta de ar");
+    expect(guardrailLabel("novo:a-b")).toBe("novo: a b");
+    expect(guardrailLabel("consent")).toBe("Consentimento");
+    expect(triageScenarioLabel("sinal-de-alarme")).toMatch(/alarme/);
+    expect(triageScenarioLabel("x")).toBe("x");
+  });
+
+  it("descreve a decisão do profissional", () => {
+    expect(reviewLabel(triage({ decision: "confirmed", finalPriority: "urgent" }))).toBe(
+      "Confirmou: Urgente",
+    );
+    expect(reviewLabel(triage({ decision: "corrected", finalPriority: "non-urgent" }))).toBe(
+      "Corrigiu para: Não urgente",
+    );
+    expect(reviewLabel(triage({}))).toBe("Pendente");
   });
 });

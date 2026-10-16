@@ -65,6 +65,15 @@ const posts: readonly Post[] = [
     phase: 6,
     tags: ["OpenTelemetry", "Observabilidade", "LGPD", "Segurança"],
   },
+  {
+    slug: "fase-7-triagem-com-ia",
+    title: "Fase 7: triagem com IA sem deixar o dado pessoal sair",
+    description:
+      "Queixa em texto livre mascarada antes do modelo, regras de alarme que a IA não rebaixa, ataques de prompt injection nos testes e um profissional confirmando cada sugestão.",
+    publishedAt: "2026-10-15",
+    phase: 7,
+    tags: ["IA", "LGPD", "Segurança", "Claude"],
+  },
 ];
 
 /** Posts do mais recente para o mais antigo; no mesmo dia, a fase mais avançada vem primeiro. */

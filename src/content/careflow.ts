@@ -101,7 +101,8 @@ export const careflowPhases: readonly Phase[] = [
     number: 7,
     title: "Triagem com IA, pseudonimização e guardrails",
     demonstrates: "IA aplicada com responsabilidade",
-    status: "planejada",
+    status: "concluida",
+    postSlug: "fase-7-triagem-com-ia",
   },
   {
     number: 8,
