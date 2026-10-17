@@ -83,6 +83,15 @@ const posts: readonly Post[] = [
     phase: 8,
     tags: ["LGPD", "FHIR", "Criptografia", "Sistemas distribuídos"],
   },
+  {
+    slug: "fase-9-careflow-no-ar",
+    title: "Fase 9: o CareFlow no ar sem pagar nada",
+    description:
+      "Oito serviços numa VM gratuita da Oracle com só a porta 443 aberta, proteção contra abuso, segredos que não saem do servidor, deploy com rollback e backup que reaplica as eliminações.",
+    publishedAt: "2026-10-16",
+    phase: 9,
+    tags: ["DevOps", "Segurança", "Docker", "LGPD"],
+  },
 ];
 
 /** Posts do mais recente para o mais antigo; no mesmo dia, a fase mais avançada vem primeiro. */

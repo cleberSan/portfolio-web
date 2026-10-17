@@ -1,0 +1,108 @@
+## O problema
+
+Até a fase 8, o CareFlow só rodava em dois lugares: na máquina de quem desenvolve e nos runners do CI. O Painel do site reproduzia gravações dessas execuções. Funcionava, mas ninguém de fora conseguia usar o sistema de verdade.
+
+A fase 9 publica o backend. A restrição era clara: tem que ser de graça e seguro. O CareFlow é um projeto de vitrine, e um custo mensal de AWS ou Azure não se justifica para ele.
+
+A Vercel, onde o site já roda, não serve. Os containers dormem depois de poucos minutos sem uso, não há Postgres nem RabbitMQ, e o plano gratuito limita as horas de CPU. O Always Free da Oracle oferece uma VM ARM com 2 núcleos, 12 GB de memória e 200 GB de disco, além de um cofre de chaves e armazenamento de objetos, tudo dentro da cota gratuita.
+
+Os dados continuam 100% sintéticos.
+
+## Uma VM, o mesmo compose
+
+A VM roda a stack inteira com Docker Compose:
+
+- o Caddy na entrada;
+- Postgres e RabbitMQ;
+- os oito serviços, cada um com o seu container de migrations;
+- uma observabilidade enxuta, com Collector, Tempo, Loki, Prometheus e Grafana guardando 3 dias.
+
+Todo container tem limite de memória, reinício automático, sistema de arquivos só leitura e nenhuma capability do Linux. Os limites somam menos de 8 GB.
+
+As imagens são compiladas para ARM pelo CI e publicadas no GitHub. O SDK roda na arquitetura do runner e só o runtime é ARM, então não há emulação no build.
+
+## Só a porta 443
+
+A VM tem duas camadas de firewall: a da rede da Oracle e a do sistema. As duas só deixam passar a 22, para o SSH por chave, e a 443.
+
+- **Certificado sem porta 80:** o Let's Encrypt valida o domínio pela própria 443, com o desafio TLS-ALPN, e a 80 fica fechada.
+- **Uma rota só:** de fora, só `/demo/v1/*` existe. Saúde, métricas e as APIs dos serviços respondem 404.
+- **Portas internas fechadas:** banco, broker e Grafana não publicam porta nenhuma. O Grafana se abre por um túnel SSH.
+- **Domínio grátis:** um subdomínio do DuckDNS, que a própria VM mantém atualizado.
+
+## Por que a sessão virou token
+
+O site está num domínio da Vercel e o backend num do DuckDNS. Para o navegador, são sites diferentes, e cookie de terceiro é bloqueado.
+
+A sessão do Painel virou um token aleatório de 32 bytes. Ele fica só na memória da página e vai no cabeçalho `Authorization`, e o servidor guarda apenas o hash. Como o navegador não manda esse token sozinho, não existe CSRF. O CORS só aceita a origem do site.
+
+Um proxy na Vercel, para tudo parecer o mesmo site, foi descartado. O backend veria só os endereços da Vercel, e o limite por endereço deixaria de existir.
+
+## Proteção contra abuso
+
+Qualquer pessoa na internet pode abrir uma sessão, então cada uma tem limites:
+
+- requisições por endereço, criação de sessão por endereço e ações por sessão;
+- no máximo 8 clínicas sintéticas ao mesmo tempo, e o site mostra quando está lotado;
+- corpo das requisições limitado a 8 KB na entrada;
+- a triagem usa as respostas gravadas do modelo, então ninguém gasta crédito de API pelo Painel.
+
+A limpeza é garantida. Toda clínica entra num registro em disco antes de existir em qualquer serviço e só sai de lá depois de apagada. Se o servidor cair no meio, a próxima subida começa limpando o que sobrou. Um teste derruba a gravação desse registro de propósito: a sessão é recusada e a vaga volta para o pool.
+
+Um interruptor desliga o modo ao vivo sem novo deploy. O backend relê um arquivo, passa a responder `desligado`, e o site volta para o replay.
+
+## Segredos que nunca saem da VM
+
+Nenhum segredo passa pelo GitHub. As senhas do banco e do broker, as chaves de assinatura, a chave da auditoria e os pares de chaves de cada serviço são gerados na própria VM, legíveis só pelo root. Rodar o gerador de novo não troca nada.
+
+As chaves do cofre do paciente saíram do disco. Agora elas ficam no OCI Vault da Oracle, numa chave protegida por software, que é gratuita. A VM se autentica como ela mesma, sem nenhuma chave da Oracle guardada.
+
+## Deploy com aprovação e volta automática
+
+O deploy é um botão no GitHub Actions, que pede aprovação antes de rodar. A chave que o GitHub usa só consegue escolher um commit. No servidor, ela executa um comando fixo que aceita `deploy <commit>`, `rollback`, `status` e `demo on|off`, e nada mais.
+
+A VM baixa a configuração desse commit do repositório público e sobe as imagens com a mesma tag. Se a saúde não confirmar, ela volta sozinha para a versão anterior. Depois, o workflow roda um teste de fumaça contra a URL pública e pede o rollback se algo falhar.
+
+## O backup que lembra das eliminações
+
+O backup é diário, vai para o Object Storage da Oracle e é apagado depois de 7 dias. Todo domingo, um ensaio baixa o último backup, confere os checksums e restaura num Postgres descartável, sem rede.
+
+A [fase 8](/diario/fase-8-direitos-do-titular) deixou um aviso: restaurar um backup antigo traz de volta a chave de um paciente que já foi eliminado. A restauração da fase 9 trata disso:
+
+1. mantém o banco dos pedidos do titular, que guarda as eliminações mais novas que o backup;
+2. restaura os outros seis bancos;
+3. reaplica cada eliminação concluída;
+4. confere que nenhum paciente eliminado tem chave no cofre;
+5. confere que a cadeia da auditoria de cada clínica fecha.
+
+Em todo PR, o CI ensaia exatamente esse caso. Ele faz um backup, elimina um paciente depois do backup, restaura e confere que a chave voltou com o backup, que a eliminação foi reaplicada e que a cadeia continua íntegra.
+
+## A stack de produção em todo PR
+
+O workflow "Stack de produção" sobe o mesmo compose num runner a cada PR, com uma CA local no lugar do Let's Encrypt. Ele faz o deploy pelo próprio script da VM, recusa um commit inexistente, roda o teste de fumaça pela 443, liga e desliga o interruptor e ensaia o backup e a restauração.
+
+## O que os testes encontraram
+
+- **O dono do banco:** as migrations rodavam como superusuário. Cada banco ganhou um dono próprio, sem superusuário e sujeito ao Row-Level Security, e o superusuário ficou só para backup.
+- **Um volume do root:** o registro de clínicas não conseguia gravar no volume, que nascia do root. A imagem passou a criar a pasta com o usuário do serviço.
+- **Uma vaga que vazava:** quando o registro não gravava, a sessão falhava mas a vaga não voltava para o pool. A falha agora devolve a vaga e desfaz o estado em memória.
+- **Zero testes também é falha:** sem a URL de um deploy, todos os testes de fumaça eram pulados, e o runner de testes trata zero testes executados como erro. A leitura da configuração do teste de fumaça ganhou testes próprios, que rodam sempre.
+
+## No site
+
+O [Painel](/projetos/careflow/painel) ganhou a seção Ao vivo. O site pergunta ao backend se ele está no ar. Se estiver, o visitante abre uma sessão numa clínica sintética só dele, marca consultas, vê o trace de cada reserva e o paciente em cada serviço. Se o backend estiver desligado, lotado ou não responder, a seção diz por quê, e os seis cenários continuam sendo o replay da gravação.
+
+A CSP do site libera uma única origem de fora, a do backend, e só para `connect-src`.
+
+## Trade-offs aceitos
+
+- **Uma VM só:** se ela cair, o modo ao vivo cai junto e o site volta para o replay.
+- **Segredos sem cópia:** os segredos da VM não têm cópia fora dela. Perder o disco torna ilegíveis entradas antigas da auditoria, o que é aceitável com dados sintéticos.
+- **Chave de assinatura compartilhada:** os serviços assinam os tokens internos com a mesma chave, e não há um provedor de identidade.
+- **Cota sem garantia:** a Oracle pode recuperar VMs gratuitas que ficam ociosas por muito tempo.
+
+As decisões estão no [ADR-0013](https://github.com/cleberSan/careflow/blob/main/docs/adr/0013-demonstracao-hospedada-na-oracle.md), e o passo a passo para criar a VM está no [guia da demonstração hospedada](https://github.com/cleberSan/careflow/blob/main/docs/operacao/demonstracao-hospedada.md).
+
+## Próximo passo
+
+Com o backend no ar, dá para medir: testes de carga contra a demonstração e um deploy gradual, quando houver mais de uma instância.

@@ -31,6 +31,8 @@ Nenhuma variável é obrigatória. Na Vercel, o site descobre o próprio endere�
 | `SITE_URL`                                     | Origem pública (ex.: `https://exemplo.dev`) para URLs canônicas, sitemap e Open Graph. Precisa ser `https`, exceto em localhost. Tem prioridade sobre a detecção automática. | Usa o domínio de produção da Vercel ou, fora dela, `http://localhost:3000` |
 | `VERCEL_ENV` e `VERCEL_PROJECT_PRODUCTION_URL` | Preenchidas pela Vercel. Só a produção libera indexação; previews apontam canônicas para produção e bloqueiam rastreamento.                                                  | O `robots.txt` bloqueia indexação                                          |
 
+| `NEXT_PUBLIC_CAREFLOW_DEMO_URL` | Origem `https` do backend da demonstração do CareFlow (ex.: `https://careflow-demo.duckdns.org`). Liga a seção Ao vivo do Painel e é a única origem de fora em `connect-src` na CSP. É lida no build: mudar exige redeploy. | O Painel fica só no replay das gravações |
+
 Nenhuma variável do site é secreta. Não use o prefixo `NEXT_PUBLIC_` para nada sensível: ele vai para o navegador.
 
 ## Deploy

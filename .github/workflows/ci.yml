@@ -49,6 +49,8 @@ jobs:
         run: npm run build
         env:
           NEXT_TELEMETRY_DISABLED: 1
+          # Backend fictício da demonstração: os testes E2E respondem por ele (e2e/fixtures.ts).
+          NEXT_PUBLIC_CAREFLOW_DEMO_URL: https://demo.careflow.test
 
       - name: Instalar Chromium para os testes E2E
         run: npx playwright install --with-deps chromium

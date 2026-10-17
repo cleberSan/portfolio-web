@@ -86,6 +86,19 @@ describe("buildContentSecurityPolicy", () => {
     expect(csp.get("form-action")).toEqual(["'self'"]);
   });
 
+  it("libera só a origem do backend da demonstração em connect-src", () => {
+    // Arrange
+    const demoBackend = new URL("https://careflow-demo.duckdns.org");
+
+    // Act
+    const csp = directives(buildContentSecurityPolicy({ isDevelopment: false, demoBackend }));
+
+    // Assert
+    expect(csp.get("connect-src")).toEqual(["'self'", "https://careflow-demo.duckdns.org"]);
+    expect(csp.get("default-src")).toEqual(["'self'"]);
+    expect(csp.get("script-src")).not.toContain("https://careflow-demo.duckdns.org");
+  });
+
   it("bloqueia handlers inline em atributos", () => {
     // Act
     const csp = directives(buildContentSecurityPolicy({ isDevelopment: false }));

@@ -117,8 +117,15 @@ export const careflowPhases: readonly Phase[] = [
   },
   {
     number: 9,
-    title: "Testes de carga, IaC e deploy canary",
-    demonstrates: "Performance e DevOps",
+    title: "CareFlow no ar: hospedagem gratuita, deploy e backup",
+    demonstrates: "DevOps e segurança em produção",
+    status: "concluida",
+    postSlug: "fase-9-careflow-no-ar",
+  },
+  {
+    number: 10,
+    title: "Testes de carga e deploy gradual",
+    demonstrates: "Performance",
     status: "planejada",
   },
 ];
