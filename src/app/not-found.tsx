@@ -3,7 +3,7 @@ import { PageHeader } from "@/components/page-header";
 
 export default function NotFound() {
   return (
-    <div className="space-y-8">
+    <div className="max-w-3xl space-y-8">
       <PageHeader title="Página não encontrada" eyebrow="Erro 404">
         <p>O endereço pode ter mudado ou nunca ter existido.</p>
       </PageHeader>

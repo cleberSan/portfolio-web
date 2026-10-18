@@ -1,6 +1,7 @@
 import { render, screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { site } from "@/config/site";
+import { careflow, careflowPhases } from "@/content/careflow";
 import { getLatestPosts } from "@/content/posts";
 import Home, { metadata } from "./page";
 
@@ -23,11 +24,15 @@ describe("Home", () => {
     expect(within(section).getAllByRole("listitem")).toHaveLength(site.focusAreas.length);
   });
 
-  it("leva ao projeto CareFlow e ao diário", () => {
+  it("leva ao Painel, ao projeto CareFlow e ao diário", () => {
     // Act
     render(<Home />);
 
     // Assert
+    expect(screen.getByRole("link", { name: "Abrir o Painel do CareFlow" })).toHaveAttribute(
+      "href",
+      "/projetos/careflow/painel",
+    );
     expect(screen.getByRole("link", { name: "Conhecer o CareFlow" })).toHaveAttribute(
       "href",
       "/projetos/careflow",
@@ -56,6 +61,32 @@ describe("Home", () => {
     // Assert
     const section = screen.getByRole("region", { name: "Para quem eu trabalho" });
     expect(within(section).getAllByRole("listitem")).toHaveLength(site.sectors.length);
+  });
+
+  it("mostra a topologia do CareFlow com todos os serviços", () => {
+    // Act
+    render(<Home />);
+
+    // Assert
+    const topology = screen.getByRole("img", { name: /Topologia do CareFlow/ });
+    for (const service of careflow.services) {
+      expect(within(topology).getByText(service.name)).toBeInTheDocument();
+    }
+  });
+
+  it("deriva os indicadores do conteúdo do CareFlow", () => {
+    // Arrange
+    const done = careflowPhases.filter((phase) => phase.status === "concluida").length;
+
+    // Act
+    render(<Home />);
+
+    // Assert
+    expect(screen.getByText(String(done))).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /acerto da triagem com IA/ })).toHaveAttribute(
+      "href",
+      `/diario/${careflow.triageEval.postSlug}`,
+    );
   });
 
   it("usa a home como URL canônica", () => {

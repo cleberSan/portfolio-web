@@ -33,7 +33,7 @@ const practices = [
 
 export default function SobrePage() {
   return (
-    <div className="space-y-16">
+    <div className="max-w-3xl space-y-16">
       <JsonLd
         data={{
           "@context": "https://schema.org",

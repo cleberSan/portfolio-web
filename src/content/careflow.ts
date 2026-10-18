@@ -27,29 +27,47 @@ export const careflow = {
     "Regras críticas garantidas no banco de dados, não só na aplicação.",
   ],
   services: [
-    { name: "Agenda", description: "Horários por profissional e clínica, sem dupla reserva." },
+    {
+      name: "Agenda",
+      signal: "sem dupla reserva",
+      description: "Horários por profissional e clínica, sem dupla reserva.",
+    },
     {
       name: "Cofre do paciente",
+      signal: "cifra por campo",
       description: "Dados pessoais cifrados por campo, com chave por paciente.",
     },
     {
       name: "Consentimento",
+      signal: "revogação por evento",
       description: "Base legal, finalidade e revogação propagada por eventos.",
     },
     {
       name: "Triagem",
+      signal: "IA pseudonimizada",
       description: "Sugestão de prioridade com IA sobre dados pseudonimizados.",
     },
     {
       name: "Notificações",
+      signal: "fallback de canal",
       description: "WhatsApp, SMS e e-mail com fallback entre canais.",
     },
-    { name: "Auditoria", description: "Trilha imutável de quem acessou qual dado e quando." },
+    {
+      name: "Auditoria",
+      signal: "cadeia HMAC",
+      description: "Trilha imutável de quem acessou qual dado e quando.",
+    },
     {
       name: "Pedidos do titular",
+      signal: "FHIR R4",
       description: "Acesso, portabilidade com Bundle HL7 FHIR e eliminação por crypto-shredding.",
     },
   ],
+  /** Avaliação da triagem com IA no CI, contada no post da fase 7. */
+  triageEval: {
+    withinOneLevel: "93,6%",
+    postSlug: "fase-7-triagem-com-ia",
+  },
 } as const;
 
 export const careflowPhases: readonly Phase[] = [

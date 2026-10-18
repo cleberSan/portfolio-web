@@ -18,7 +18,7 @@ type NavLinksProps = {
 
 export function NavLinks({ items, pathname }: NavLinksProps) {
   return (
-    <ul className="flex flex-wrap gap-x-5 gap-y-2">
+    <ul className="flex flex-wrap gap-x-1 gap-y-1 text-sm">
       {items.map((item) => {
         const active = isActivePath(pathname, item.href);
         return (
@@ -28,8 +28,8 @@ export function NavLinks({ items, pathname }: NavLinksProps) {
               aria-current={active ? "page" : undefined}
               className={
                 active
-                  ? "text-foreground font-medium underline decoration-2 underline-offset-8"
-                  : "text-muted hover:text-foreground underline-offset-8 hover:underline"
+                  ? "bg-surface text-foreground border-border block rounded-md border px-3 py-1.5 font-medium"
+                  : "text-muted hover:text-foreground hover:bg-surface block rounded-md border border-transparent px-3 py-1.5"
               }
             >
               {item.label}

@@ -11,7 +11,7 @@ export const metadata: Metadata = pageMetadata({ title: "Stack", description, pa
 
 export default function StackPage() {
   return (
-    <div className="space-y-16">
+    <div className="max-w-3xl space-y-16">
       <PageHeader title="Stack" eyebrow="Ferramentas e práticas">
         <p>
           O que uso no dia a dia. Quando uma tecnologia aparece em código aberto, o link leva direto

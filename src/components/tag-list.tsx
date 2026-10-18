@@ -4,7 +4,7 @@ export function TagList({ tags, label = "Tags" }: { tags: readonly string[]; lab
       {tags.map((tag) => (
         <li
           key={tag}
-          className="border-border text-muted rounded-full border px-3 py-0.5 text-xs font-medium"
+          className="border-border text-muted rounded-md border px-2 py-0.5 font-mono text-xs"
         >
           {tag}
         </li>

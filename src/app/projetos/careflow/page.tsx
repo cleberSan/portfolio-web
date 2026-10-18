@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ExternalLink } from "@/components/external-link";
 import { PageHeader } from "@/components/page-header";
+import { Topology } from "@/components/topology";
 import { careflow, careflowPhases, phaseStatusLabel } from "@/content/careflow";
 import { getPostBySlug } from "@/content/posts";
 import { pageMetadata } from "@/lib/metadata";
@@ -15,7 +16,7 @@ export const metadata: Metadata = pageMetadata({
 
 export default function CareFlowPage() {
   return (
-    <div className="space-y-16">
+    <div className="max-w-5xl space-y-16 [&_section>p]:max-w-3xl">
       <PageHeader title={careflow.name} eyebrow="Projeto vitrine">
         <p>{careflow.tagline}</p>
       </PageHeader>
@@ -24,7 +25,7 @@ export default function CareFlowPage() {
         <div className="flex flex-wrap gap-4">
           <Link
             href="/projetos/careflow/painel"
-            className="bg-foreground text-background rounded-md px-5 py-2.5 font-medium hover:opacity-90"
+            className="bg-accent text-background rounded-md px-5 py-2.5 font-medium hover:opacity-90"
           >
             Ver demonstração
           </Link>
@@ -101,10 +102,16 @@ export default function CareFlowPage() {
           comunicação por eventos com Outbox/Inbox. Agenda, cofre, consentimento, notificações,
           auditoria, triagem com IA e pedidos do titular já estão implementados.
         </p>
-        <dl className="grid gap-4 sm:grid-cols-2">
+        <figure className="border-border bg-surface rounded-xl border p-3 sm:p-6">
+          <Topology id="topologia-careflow" className="mx-auto h-auto w-full max-w-2xl" />
+        </figure>
+        <dl className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {careflow.services.map((service) => (
             <div key={service.name} className="border-border rounded-lg border p-4">
-              <dt className="font-semibold">{service.name}</dt>
+              <dt className="flex flex-wrap items-baseline justify-between gap-x-3 font-semibold">
+                {service.name}
+                <span className="text-accent font-mono text-xs font-normal">{service.signal}</span>
+              </dt>
               <dd className="text-muted mt-1 text-sm leading-relaxed">{service.description}</dd>
             </div>
           ))}
@@ -141,10 +148,11 @@ export default function CareFlowPage() {
                 <span
                   className={
                     phase.status === "concluida"
-                      ? "text-accent text-sm font-medium"
-                      : "text-muted text-sm"
+                      ? "text-ok border-border inline-flex items-center gap-2 rounded-md border px-2 py-0.5 font-mono text-xs"
+                      : "text-muted border-border inline-flex items-center gap-2 rounded-md border border-dashed px-2 py-0.5 font-mono text-xs"
                   }
                 >
+                  <span aria-hidden="true" className="size-1.5 rounded-full bg-current" />
                   {phaseStatusLabel[phase.status]}
                 </span>
               </li>

@@ -6,9 +6,16 @@ import { NavLinks } from "./nav-links";
 
 export function SiteHeader() {
   return (
-    <header className="border-border border-b">
-      <div className="mx-auto flex w-full max-w-3xl flex-wrap items-center justify-between gap-4 px-6 py-5">
-        <Link href="/" className="text-lg font-semibold tracking-tight">
+    <header className="border-border bg-background/85 sticky top-0 z-40 border-b backdrop-blur">
+      <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center justify-between gap-x-6 gap-y-3 px-6 py-4">
+        <Link
+          href="/"
+          className="flex items-center gap-2.5 font-mono text-base font-medium tracking-tight"
+        >
+          <span
+            aria-hidden="true"
+            className="text-accent status-dot size-2 rounded-full bg-current"
+          />
           {site.name}
         </Link>
         <nav aria-label="Principal">
