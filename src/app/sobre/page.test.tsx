@@ -42,15 +42,19 @@ describe("SobrePage", () => {
     expect(JSON.parse(script?.textContent ?? "{}")).toMatchObject({
       "@type": "Person",
       name: site.name,
-      sameAs: [site.links.github],
+      sameAs: [site.links.linkedin, site.links.github],
     });
   });
 
-  it("aponta o GitHub como contato", () => {
+  it("aponta o LinkedIn e o GitHub como contato", () => {
     // Act
     render(<SobrePage />);
 
     // Assert
+    expect(screen.getByRole("link", { name: /^LinkedIn/ })).toHaveAttribute(
+      "href",
+      site.links.linkedin,
+    );
     expect(screen.getByRole("link", { name: /^GitHub/ })).toHaveAttribute(
       "href",
       site.links.github,
