@@ -41,7 +41,7 @@ export default function SobrePage() {
           name: site.name,
           jobTitle: site.role,
           url: new URL("/sobre", siteUrl.url).href,
-          sameAs: [site.links.github],
+          sameAs: [site.links.linkedin, site.links.github],
           knowsAbout: [".NET", "Microsserviços", "React", "Angular", "AWS", "Azure"],
         }}
       />
@@ -101,7 +101,11 @@ export default function SobrePage() {
           Contato
         </h2>
         <p className="text-muted leading-relaxed">
-          O caminho mais direto hoje é o{" "}
+          O caminho mais direto é o{" "}
+          <ExternalLink href={site.links.linkedin} className="text-foreground underline">
+            LinkedIn
+          </ExternalLink>
+          . O código de tudo o que aparece aqui está no{" "}
           <ExternalLink href={site.links.github} className="text-foreground underline">
             GitHub
           </ExternalLink>

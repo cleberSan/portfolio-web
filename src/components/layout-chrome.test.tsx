@@ -18,11 +18,15 @@ describe("SkipLink", () => {
 });
 
 describe("SiteFooter", () => {
-  it("aponta para o GitHub e para o código do site", () => {
+  it("aponta para o LinkedIn, o GitHub e o código do site", () => {
     // Act
     render(<SiteFooter />);
 
     // Assert
+    expect(screen.getByRole("link", { name: /^LinkedIn/ })).toHaveAttribute(
+      "href",
+      site.links.linkedin,
+    );
     expect(screen.getByRole("link", { name: /^GitHub/ })).toHaveAttribute(
       "href",
       site.links.github,

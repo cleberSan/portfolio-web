@@ -24,7 +24,7 @@ export const metadata: Metadata = {
     template: `%s | ${site.name}`,
   },
   description: site.description,
-  authors: [{ name: site.name, url: site.links.github }],
+  authors: [{ name: site.name, url: site.links.linkedin }],
   creator: site.name,
 };
 

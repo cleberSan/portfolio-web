@@ -91,4 +91,19 @@ describe("pageMetadata", () => {
     expect(metadata.openGraph?.images).toBeUndefined();
     expect(metadata.twitter?.images).toBeUndefined();
   });
+
+  it("deixa a imagem para o segmento quando a página tem a sua", () => {
+    // Act
+    const metadata = pageMetadata({
+      title: "CareFlow",
+      description: "Projeto",
+      path: "/projetos/careflow",
+      ownImage: true,
+    });
+
+    // Assert
+    expect(metadata.openGraph).toMatchObject({ type: "website", url: "/projetos/careflow" });
+    expect(metadata.openGraph?.images).toBeUndefined();
+    expect(metadata.twitter?.images).toBeUndefined();
+  });
 });
