@@ -10,6 +10,11 @@ type PageMetadataInput = {
   /** Usa o título sem o sufixo do template (home). */
   absoluteTitle?: boolean;
   article?: { publishedTime: string; tags: readonly string[] };
+  /**
+   * A página tem `opengraph-image.tsx` no próprio segmento. A imagem padrão fica de fora
+   * para a do segmento valer também no `twitter:image` e não disputar com ela.
+   */
+  ownImage?: boolean;
 };
 
 /**
@@ -21,8 +26,8 @@ const siteOgImage = { url: "/opengraph-image", ...ogSize, alt: siteOgAlt, type: 
 /**
  * O Next.js substitui (não mescla) o objeto `openGraph` do layout quando a página define
  * o seu. Este helper monta sempre o conjunto completo para nenhuma página perder campos.
- * Posts não recebem a imagem padrão: a imagem própria de cada um vem do arquivo
- * `opengraph-image.tsx` do segmento, que tem prioridade sobre a configuração.
+ * Posts e páginas com `ownImage` não recebem a imagem padrão: a imagem própria vem do
+ * arquivo `opengraph-image.tsx` do segmento, que tem prioridade sobre a configuração.
  */
 export function pageMetadata({
   title,
@@ -30,6 +35,7 @@ export function pageMetadata({
   path,
   absoluteTitle = false,
   article,
+  ownImage = false,
 }: PageMetadataInput): Metadata {
   const shared = {
     title,
@@ -38,6 +44,8 @@ export function pageMetadata({
     siteName: site.name,
     locale: "pt_BR",
   };
+
+  const images = article || ownImage ? {} : { images: [siteOgImage] };
 
   return {
     title: absoluteTitle ? { absolute: title } : title,
@@ -51,9 +59,7 @@ export function pageMetadata({
           authors: [site.name],
           tags: [...article.tags],
         }
-      : { ...shared, type: "website", images: [siteOgImage] },
-    twitter: article
-      ? { card: "summary_large_image", title, description }
-      : { card: "summary_large_image", title, description, images: [siteOgImage] },
+      : { ...shared, type: "website", ...images },
+    twitter: { card: "summary_large_image", title, description, ...images },
   };
 }

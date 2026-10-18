@@ -11,6 +11,7 @@ export const metadata: Metadata = pageMetadata({
   title: careflow.name,
   description: careflow.tagline,
   path: "/projetos/careflow",
+  ownImage: true,
 });
 
 export default function CareFlowPage() {

@@ -10,6 +10,11 @@ export function SiteFooter() {
         </p>
         <ul className="flex flex-wrap gap-x-5 gap-y-2">
           <li>
+            <ExternalLink href={site.links.linkedin} className="hover:text-foreground underline">
+              LinkedIn
+            </ExternalLink>
+          </li>
+          <li>
             <ExternalLink href={site.links.github} className="hover:text-foreground underline">
               GitHub
             </ExternalLink>

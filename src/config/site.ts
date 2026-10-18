@@ -13,6 +13,7 @@ export const site = {
   sectors: ["Pagamentos digitais", "Fundos de investimento", "Saúde", "Previdência", "Educação"],
   links: {
     github: "https://github.com/cleberSan",
+    linkedin: "https://www.linkedin.com/in/cleber-costa-santos/",
     careflow: "https://github.com/cleberSan/careflow",
     source: "https://github.com/cleberSan/portfolio-web",
   },

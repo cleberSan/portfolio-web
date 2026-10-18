@@ -33,6 +33,7 @@ export const metadata: Metadata = pageMetadata({
   title: "Painel de Privacidade e Resiliência",
   description,
   path: "/projetos/careflow/painel",
+  ownImage: true,
 });
 
 const adrUrl =

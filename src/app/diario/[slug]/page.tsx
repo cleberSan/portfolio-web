@@ -56,7 +56,7 @@ export default async function PostPage({ params }: PageProps<"/diario/[slug]">) 
           inLanguage: "pt-BR",
           url,
           keywords: post.tags.join(", "),
-          author: { "@type": "Person", name: site.name, url: site.links.github },
+          author: { "@type": "Person", name: site.name, url: site.links.linkedin },
         }}
       />
 
