@@ -3,7 +3,7 @@ import { ExternalLink } from "./external-link";
 
 export function StackItemList({ items }: { items: readonly StackItem[] }) {
   return (
-    <ul className="divide-border border-border divide-y rounded-lg border">
+    <ul className="divide-border border-border bg-surface divide-y rounded-lg border">
       {items.map((item) => (
         <li
           key={item.name}

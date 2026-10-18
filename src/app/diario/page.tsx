@@ -15,7 +15,7 @@ export const metadata: Metadata = pageMetadata({
 
 export default function DiarioPage() {
   return (
-    <div className="space-y-12">
+    <div className="max-w-3xl space-y-12">
       <PageHeader title="Diário de bordo" eyebrow="CareFlow em público">
         <p>{description}</p>
       </PageHeader>

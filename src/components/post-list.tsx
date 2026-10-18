@@ -17,16 +17,20 @@ export function PostList({ posts, headingLevel = 2 }: PostListProps) {
   const Heading = headingLevel === 2 ? "h2" : "h3";
 
   return (
-    <ul className="space-y-10">
+    <ul className="space-y-4">
       {posts.map((post) => (
         <li key={post.slug}>
-          <article className="space-y-3">
-            <p className="text-muted text-sm">
+          <article className="border-border hover:border-accent/50 relative space-y-3 rounded-lg border p-5 transition-colors">
+            <p className="text-muted font-mono text-xs">
               <time dateTime={post.publishedAt}>{formatLongDate(post.publishedAt)}</time> · Fase{" "}
               {post.phase}
             </p>
             <Heading className="text-xl font-semibold tracking-tight">
-              <Link href={`/diario/${post.slug}`} className="hover:underline">
+              {/* O link cobre o cartão inteiro, mantendo um único alvo para leitores de tela. */}
+              <Link
+                href={`/diario/${post.slug}`}
+                className="after:absolute after:inset-0 after:rounded-lg hover:underline"
+              >
                 {post.title}
               </Link>
             </Heading>

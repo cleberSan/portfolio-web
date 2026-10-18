@@ -97,7 +97,7 @@ export default function PainelPage() {
   const pseudonym = patient.pseudonym;
 
   return (
-    <div className="space-y-16">
+    <div className="max-w-5xl space-y-16 [&_section>p]:max-w-3xl">
       <PageHeader title="Painel de Privacidade e Resiliência" eyebrow="CareFlow · Fases 6 a 9">
         <p>{description}</p>
       </PageHeader>
@@ -130,10 +130,13 @@ export default function PainelPage() {
         <h2 id="cenarios" className="text-2xl font-semibold tracking-tight">
           Cenários
         </h2>
-        <ol className="list-none space-y-1">
+        <ol className="grid list-none gap-2 sm:grid-cols-2 lg:grid-cols-3">
           {scenarios.map((scenario) => (
             <li key={scenario.id}>
-              <a href={`#${scenario.id}`} className="text-accent underline underline-offset-4">
+              <a
+                href={`#${scenario.id}`}
+                className="border-border bg-surface hover:border-accent/60 block h-full rounded-md border px-3 py-2 text-sm"
+              >
                 {scenario.title}
               </a>
             </li>
@@ -266,18 +269,18 @@ export default function PainelPage() {
         <dl className="grid gap-4 sm:grid-cols-3">
           <div className="border-border rounded-lg border p-4">
             <dt className="text-muted text-sm">Consultas canceladas</dt>
-            <dd className="text-2xl font-semibold">
+            <dd className="font-mono text-2xl font-medium tabular-nums">
               {revocation.after.appointments.filter((a) => a.status === "Cancelled").length} de{" "}
               {revocation.before.appointments.length}
             </dd>
           </div>
           <div className="border-border rounded-lg border p-4">
             <dt className="text-muted text-sm">Avisos de cancelamento enviados</dt>
-            <dd className="text-2xl font-semibold">{cancellations.length}</dd>
+            <dd className="font-mono text-2xl font-medium tabular-nums">{cancellations.length}</dd>
           </div>
           <div className="border-border rounded-lg border p-4">
             <dt className="text-muted text-sm">Da revogação ao último cancelamento</dt>
-            <dd className="text-2xl font-semibold">
+            <dd className="font-mono text-2xl font-medium tabular-nums">
               {propagation === undefined ? "não medido" : formatMs(propagation)}
             </dd>
           </div>

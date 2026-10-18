@@ -17,23 +17,33 @@ export default function ProjetosPage() {
   const done = careflowPhases.filter((phase) => phase.status === "concluida").length;
 
   return (
-    <div className="space-y-12">
+    <div className="max-w-3xl space-y-12">
       <PageHeader title="Projetos" eyebrow="Trabalho à vista">
         <p>{description}</p>
       </PageHeader>
 
       <ul className="space-y-6">
         <li>
-          <article className="border-border space-y-3 rounded-lg border p-6">
+          <article className="border-border bg-surface space-y-4 rounded-xl border p-6">
             <h2 className="text-2xl font-semibold tracking-tight">
               <Link href="/projetos/careflow" className="hover:underline">
                 {careflow.name}
               </Link>
             </h2>
             <p className="text-muted leading-relaxed">{careflow.tagline}</p>
-            <p className="text-sm">
-              {done} de {careflowPhases.length} fases concluídas
-            </p>
+            <div className="space-y-2">
+              <p className="font-mono text-sm">
+                {done} de {careflowPhases.length} fases concluídas
+              </p>
+              <ol aria-hidden="true" className="flex gap-1">
+                {careflowPhases.map((phase) => (
+                  <li
+                    key={phase.number}
+                    className={`h-2 flex-1 rounded-sm ${phase.status === "concluida" ? "bg-accent" : "bg-border"}`}
+                  />
+                ))}
+              </ol>
+            </div>
           </article>
         </li>
       </ul>

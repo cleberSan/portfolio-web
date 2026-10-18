@@ -87,9 +87,11 @@ describe("CareFlowPage", () => {
     // Act
     render(<CareFlowPage />);
 
-    // Assert
+    // Assert: o nome também aparece na topologia, então a busca fica na lista de serviços.
+    const terms = screen.getAllByRole("term").map((term) => term.textContent ?? "");
     for (const service of careflow.services) {
-      expect(screen.getByText(service.name)).toBeInTheDocument();
+      expect(terms).toContain(`${service.name}${service.signal}`);
+      expect(screen.getByText(service.description)).toBeInTheDocument();
     }
   });
 

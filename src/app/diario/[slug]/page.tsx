@@ -45,7 +45,7 @@ export default async function PostPage({ params }: PageProps<"/diario/[slug]">) 
   const url = new URL(`/diario/${post.slug}`, siteUrl.url).href;
 
   return (
-    <article className="space-y-10">
+    <article className="max-w-3xl space-y-10">
       <JsonLd
         data={{
           "@context": "https://schema.org",
@@ -61,7 +61,7 @@ export default async function PostPage({ params }: PageProps<"/diario/[slug]">) 
       />
 
       <header className="space-y-4">
-        <p className="text-muted text-sm">
+        <p className="text-muted font-mono text-xs">
           <Link href="/diario" className="hover:text-foreground underline">
             Diário de bordo
           </Link>{" "}
