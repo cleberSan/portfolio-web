@@ -1,5 +1,5 @@
 export const site = {
-  name: "Cleber",
+  name: "Cleber Costa Santos",
   role: "Engenheiro de Software Full-Stack Sênior",
   description:
     "Construo sistemas críticos, microsserviços distribuídos e frontends modernos, com foco em resiliência, segurança e observabilidade de ponta a ponta.",
@@ -10,7 +10,14 @@ export const site = {
     "Observabilidade com OpenTelemetry",
     "Segurança e privacidade por design",
   ],
-  sectors: ["Pagamentos digitais", "Fundos de investimento", "Saúde", "Previdência", "Educação"],
+  sectors: [
+    "Pagamentos digitais",
+    "Fundos de investimento",
+    "Gestão de estacionamentos",
+    "Saúde",
+    "Previdência",
+    "Educação",
+  ],
   links: {
     github: "https://github.com/cleberSan",
     linkedin: "https://www.linkedin.com/in/cleber-costa-santos/",

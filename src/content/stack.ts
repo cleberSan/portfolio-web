@@ -29,6 +29,7 @@ export const stackGroups: readonly StackGroup[] = [
           href: `${careflowTree}/src/Services/Scheduling/CareFlow.Scheduling.Api`,
         },
       },
+      { name: "C# e APIs REST" },
       { name: "Microsserviços distribuídos" },
       {
         name: "Domain-Driven Design",
@@ -45,6 +46,63 @@ export const stackGroups: readonly StackGroup[] = [
         },
       },
       { name: "Clean Architecture e Arquitetura Hexagonal" },
+      { name: "Clean Code, MVC e padrões de design" },
+    ],
+  },
+  {
+    id: "mensageria",
+    title: "Mensageria e resiliência",
+    summary:
+      "Comunicação assíncrona que aguenta falha parcial, mensagem duplicada e provedor que responde de forma ambígua.",
+    items: [
+      {
+        name: "RabbitMQ e AMQP",
+        evidence: {
+          label: "Camada de mensageria do CareFlow",
+          href: `${careflowTree}/src/BuildingBlocks/CareFlow.BuildingBlocks.Messaging`,
+        },
+      },
+      { name: "Azure Service Bus (filas e tópicos)" },
+      {
+        name: "Outbox e Inbox",
+        evidence: {
+          label: "ADR de mensageria com Outbox/Inbox",
+          href: `${careflowBlob}/docs/adr/0006-mensageria-outbox-inbox-rabbitmq.md`,
+        },
+      },
+      {
+        name: "Idempotência e tratamento de duplicidade",
+        evidence: {
+          label: "Idempotency-Key na agenda",
+          href: `${careflowBlob}/src/Services/Scheduling/CareFlow.Scheduling.Api/Common/Http/IdempotencyKey.cs`,
+        },
+      },
+      {
+        name: "Retry com backoff, circuit breaker e fallback",
+        evidence: {
+          label: "ADR de notificações com fallback",
+          href: `${careflowBlob}/docs/adr/0009-notificacoes-com-fallback-e-falhas-injetaveis.md`,
+        },
+      },
+      { name: "Reconciliação de estados" },
+    ],
+  },
+  {
+    id: "dados",
+    title: "Dados",
+    summary: "Bancos relacionais e NoSQL escolhidos pelo problema, com segurança e consistência.",
+    items: [
+      { name: "SQL Server" },
+      {
+        name: "PostgreSQL",
+        evidence: {
+          label: "Row-Level Security por clínica",
+          href: `${careflowBlob}/docs/adr/0003-row-level-security-por-clinica.md`,
+        },
+      },
+      { name: "MySQL" },
+      { name: "MongoDB" },
+      { name: "Redis" },
     ],
   },
   {
@@ -54,6 +112,7 @@ export const stackGroups: readonly StackGroup[] = [
     items: [
       { name: "React" },
       { name: "Angular" },
+      { name: "Vue.js" },
       { name: "ASP.NET Razor" },
       {
         name: "Next.js e TypeScript",
@@ -66,9 +125,21 @@ export const stackGroups: readonly StackGroup[] = [
   },
   {
     id: "cloud",
-    title: "Cloud",
-    summary: "Soluções em nuvem pública com foco em alta disponibilidade.",
-    items: [{ name: "AWS" }, { name: "Azure" }],
+    title: "Cloud e DevOps",
+    summary: "Nuvem pública, contêineres e pipelines com portão de qualidade.",
+    items: [
+      { name: "AWS" },
+      { name: "Azure (APIM, App Services, Blob Storage)" },
+      {
+        name: "Docker e Kubernetes",
+        evidence: {
+          label: "Docker Compose do CareFlow",
+          href: `${careflowBlob}/docker-compose.yml`,
+        },
+      },
+      { name: "Rancher" },
+      { name: "Azure DevOps, Boards e SonarQube" },
+    ],
   },
   {
     id: "observabilidade",
@@ -85,6 +156,7 @@ export const stackGroups: readonly StackGroup[] = [
         },
       },
       { name: "Serilog" },
+      { name: "Microsoft Clarity" },
     ],
   },
   {
