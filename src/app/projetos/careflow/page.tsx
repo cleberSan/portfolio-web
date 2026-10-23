@@ -3,7 +3,7 @@ import Link from "next/link";
 import { ExternalLink } from "@/components/external-link";
 import { PageHeader } from "@/components/page-header";
 import { Topology } from "@/components/topology";
-import { careflow, careflowPhases, phaseStatusLabel } from "@/content/careflow";
+import { careflow, careflowPhases, careflowVideo, phaseStatusLabel } from "@/content/careflow";
 import { getPostBySlug } from "@/content/posts";
 import { pageMetadata } from "@/lib/metadata";
 
@@ -49,6 +49,46 @@ export default function CareFlowPage() {
         Projeto de demonstração. Usa apenas dados sintéticos e não faz diagnóstico nem promessa
         clínica.
       </p>
+
+      <section aria-labelledby="video" className="space-y-4">
+        <h2 id="video" className="text-2xl font-semibold tracking-tight">
+          O fluxo em um minuto
+        </h2>
+        <p className="text-muted leading-relaxed">
+          O caminho de uma paciente pelo CareFlow: à esquerda o que ela vê, à direita o que acontece
+          nos serviços. Os valores técnicos vêm da mesma gravação do CI que o Painel reproduz; a
+          tela do celular é ilustrativa.
+        </p>
+        <div className="grid items-start gap-6 md:grid-cols-[minmax(0,24rem)_1fr]">
+          <video
+            controls
+            muted
+            playsInline
+            preload="none"
+            poster={careflowVideo.poster}
+            width={careflowVideo.width}
+            height={careflowVideo.height}
+            aria-label="Vídeo do fluxo da paciente no CareFlow, sem áudio"
+            aria-describedby="video-cenas"
+            className="border-border h-auto w-full rounded-lg border"
+          >
+            {careflowVideo.sources.map((source) => (
+              <source key={source.src} src={source.src} type={source.type} />
+            ))}
+            <a href={careflowVideo.download} className="underline underline-offset-4">
+              Baixar o vídeo ({careflowVideo.sizeLabel})
+            </a>
+          </video>
+          <ol id="video-cenas" className="list-decimal space-y-3 pl-5 leading-relaxed">
+            {careflowVideo.scenes.map((scene) => (
+              <li key={scene.title}>
+                <span className="font-medium">{scene.title}.</span>{" "}
+                <span className="text-muted">{scene.description}</span>
+              </li>
+            ))}
+          </ol>
+        </div>
+      </section>
 
       <section aria-labelledby="painel" className="space-y-4">
         <h2 id="painel" className="text-2xl font-semibold tracking-tight">

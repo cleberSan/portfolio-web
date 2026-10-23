@@ -75,6 +75,32 @@ test("a página do CareFlow leva à demonstração", async ({ page }) => {
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
 });
 
+test("o vídeo do fluxo carrega da própria origem, sem esbarrar na CSP", async ({ page }) => {
+  // Arrange
+  const blocked: string[] = [];
+  page.on("console", (message) => {
+    if (/Content Security Policy/i.test(message.text())) blocked.push(message.text());
+  });
+  await page.goto("/projetos/careflow");
+  const video = page.locator("#video ~ div video");
+  await expect(video).toBeVisible();
+
+  // Act
+  await video.evaluate((element: HTMLVideoElement) => {
+    element.preload = "metadata";
+    element.load();
+  });
+
+  // Assert
+  await expect
+    .poll(() => video.evaluate((element: HTMLVideoElement) => element.readyState))
+    .toBeGreaterThanOrEqual(1);
+  const seconds = await video.evaluate((element: HTMLVideoElement) => element.duration);
+  expect(seconds).toBeGreaterThan(50);
+  expect(await video.evaluate((element: HTMLVideoElement) => element.paused)).toBe(true);
+  expect(blocked).toEqual([]);
+});
+
 test("links externos abrem em nova aba sem window.opener", async ({ page }) => {
   // Arrange
   await page.goto("/sobre");

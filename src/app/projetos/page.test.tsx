@@ -1,6 +1,8 @@
+import { existsSync } from "node:fs";
+import { join } from "node:path";
 import { render, screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import { careflow, careflowPhases } from "@/content/careflow";
+import { careflow, careflowPhases, careflowVideo } from "@/content/careflow";
 import CareFlowPage, { metadata as careflowMetadata } from "./careflow/page";
 import ProjetosPage, { metadata } from "./page";
 
@@ -49,6 +51,39 @@ describe("CareFlowPage", () => {
     expect(code).toHaveAttribute("target", "_blank");
     const roadmap = screen.getByRole("region", { name: "Roadmap" });
     expect(demo.compareDocumentPosition(roadmap) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it("mostra o vídeo do fluxo sem tocar sozinho, com capa e as cenas como descrição", () => {
+    // Act
+    const { container } = render(<CareFlowPage />);
+
+    // Assert
+    const section = screen.getByRole("region", { name: "O fluxo em um minuto" });
+    const video = container.querySelector("video");
+    expect(video).not.toBeNull();
+    expect(section).toContainElement(video);
+    expect(video).toHaveAttribute("controls");
+    expect(video).not.toHaveAttribute("autoplay");
+    expect(video).toHaveAttribute("preload", "none");
+    expect(video).toHaveAttribute("poster", careflowVideo.poster);
+    const sources = [...(video?.querySelectorAll("source") ?? [])].map((source) => [
+      source.getAttribute("src"),
+      source.getAttribute("type"),
+    ]);
+    expect(sources).toEqual(careflowVideo.sources.map((source) => [source.src, source.type]));
+    const scenes = within(section).getAllByRole("listitem");
+    expect(scenes).toHaveLength(careflowVideo.scenes.length);
+    expect(video).toHaveAttribute("aria-describedby", scenes[0].parentElement?.id);
+    expect(section).toHaveTextContent(/tela do celular é ilustrativa/);
+  });
+
+  it.each([
+    ...careflowVideo.sources.map((source) => source.src),
+    careflowVideo.download,
+    careflowVideo.poster,
+  ])("serve %s a partir de public/", (path) => {
+    // Assert
+    expect(existsSync(join(process.cwd(), "public", path))).toBe(true);
   });
 
   it("mostra todas as fases do roadmap em ordem com o status", () => {
