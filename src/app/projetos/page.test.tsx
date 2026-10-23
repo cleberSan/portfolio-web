@@ -3,6 +3,7 @@ import { join } from "node:path";
 import { render, screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { careflow, careflowPhases, careflowVideo } from "@/content/careflow";
+import { lojinha } from "@/content/lojinha";
 import CareFlowPage, { metadata as careflowMetadata } from "./careflow/page";
 import ProjetosPage, { metadata } from "./page";
 
@@ -22,6 +23,18 @@ describe("ProjetosPage", () => {
     expect(
       screen.getByText(`${done} de ${careflowPhases.length} fases concluídas`),
     ).toBeInTheDocument();
+  });
+
+  it("lista a Lojinha Da Lua como projeto no ar", () => {
+    // Act
+    render(<ProjetosPage />);
+
+    // Assert
+    expect(screen.getByRole("link", { name: lojinha.name })).toHaveAttribute(
+      "href",
+      "/projetos/lojinha-da-lua",
+    );
+    expect(screen.getByText(`No ar · ${lojinha.stack}`)).toBeInTheDocument();
   });
 
   it("usa /projetos como URL canônica", () => {
