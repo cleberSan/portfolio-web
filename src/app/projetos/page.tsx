@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { PageHeader } from "@/components/page-header";
 import { careflow, careflowPhases } from "@/content/careflow";
+import { lojinha } from "@/content/lojinha";
 import { pageMetadata } from "@/lib/metadata";
 
 const description =
@@ -44,6 +45,17 @@ export default function ProjetosPage() {
                 ))}
               </ol>
             </div>
+          </article>
+        </li>
+        <li>
+          <article className="border-border bg-surface space-y-4 rounded-xl border p-6">
+            <h2 className="text-2xl font-semibold tracking-tight">
+              <Link href="/projetos/lojinha-da-lua" className="hover:underline">
+                {lojinha.name}
+              </Link>
+            </h2>
+            <p className="text-muted leading-relaxed">{lojinha.tagline}</p>
+            <p className="font-mono text-sm">No ar · {lojinha.stack}</p>
           </article>
         </li>
       </ul>

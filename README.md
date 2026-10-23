@@ -15,6 +15,7 @@ Construído com Next.js 16, TypeScript e Tailwind CSS. O projeto vitrine é o [C
 | `/`                         | Apresentação, foco, projeto em destaque e posts recentes    |
 | `/projetos/careflow`        | Arquitetura, princípios e roadmap do CareFlow               |
 | `/projetos/careflow/painel` | Painel de Privacidade e Resiliência (gravação real)         |
+| `/projetos/lojinha-da-lua`  | Estudo de caso do site da Lojinha Da Lua, uma loja real     |
 | `/diario`                   | Diário de bordo em MDX, um post por fase                    |
 | `/stack`                    | Tecnologias, com links para onde aparecem em código público |
 | `/sobre`                    | Experiência, forma de trabalho e contato                    |
