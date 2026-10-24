@@ -55,10 +55,10 @@ export const lojinha = {
       adr: "0005-pedido-pelo-whatsapp-sem-backend",
     },
     {
-      title: "Imagens sem direitos de terceiros",
+      title: "Fotos de 1200 px a partir de prints de 720 px",
       description:
-        "Um site comercial com código aberto não pode usar marcas e personagens sem licença. A primeira versão usa recortes seguros e ilustrações identificadas como tal, até a loja enviar fotos próprias.",
-      adr: "0003-imagens-sem-terceiros",
+        "As únicas imagens da loja eram prints dos flyers. O painel de cada produto foi ampliado 4x com Real-ESRGAN, rodando localmente, e remontado no padrão dos flyers. No telefone impresso na polo, a ampliação é Lanczos, porque a rede trocava dígitos. As estampas são de terceiros, e o ADR registra o risco aceito e como voltar atrás.",
+      adr: "0009-fotos-dos-flyers-com-estampas-originais",
     },
     {
       title: "CSP por hash, inclusive nas ilhas React",
