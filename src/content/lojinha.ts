@@ -69,13 +69,13 @@ export const lojinha = {
     {
       title: "SEO sem dependência nova",
       description:
-        "Open Graph, JSON-LD de produto com preço em reais e sitemap gerados no build a partir de uma variável com o endereço do site.",
+        "Open Graph, JSON-LD de produto com preço em reais e sitemap gerados no build a partir do endereço do site, que fica no código.",
       adr: "0007-seo-e-previa-de-links",
     },
     {
       title: "Produção conferida todo dia",
       description:
-        "A mesma suíte E2E do CI roda contra o site publicado e abre uma issue se algo mudar no ar. Na primeira execução, ela mostrou que a produção tinha saído sem a variável de endereço.",
+        "A mesma suíte E2E do CI roda contra o site publicado e abre uma issue se algo mudar no ar. Na primeira execução, ela mostrou a produção sem canonical e sem sitemap, e o endereço saiu da configuração do painel para o código.",
       adr: "0008-conferencia-do-site-no-ar",
     },
   ],
