@@ -37,18 +37,6 @@ describe("ContactLinks", () => {
     expect(screen.getByRole("link", { name: /^Telefone/ })).not.toHaveAttribute("target");
   });
 
-  it("no currículo mostra o telefone uma vez só, valendo para o WhatsApp", () => {
-    // Act
-    render(<ContactLinks layout="inline" />);
-
-    // Assert
-    expect(screen.getAllByText(site.contact.phone)).toHaveLength(1);
-    expect(screen.getByRole("link", { name: /^Telefone e WhatsApp/ })).toHaveAttribute(
-      "href",
-      site.contact.phoneHref,
-    );
-  });
-
   it("nunca oferece e-mail", () => {
     // Act
     const { container } = render(<ContactLinks />);

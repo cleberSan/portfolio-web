@@ -55,8 +55,8 @@ export const qualityPipeline = {
 export type Service = { title: string; description: string };
 
 /**
- * O que ele leva para um time, ancorado no que já fez em produção. É apresentação para vagas, não
- * oferta de serviço pago: o site roda na Vercel Hobby, que é de uso não comercial (ADR-0005).
+ * Com o que ele trabalha, ancorado no que já fez em produção. Mostra a atuação dele, não é oferta
+ * de serviço pago: o site roda na Vercel Hobby, que é de uso não comercial (ADR-0005).
  */
 export const services: readonly Service[] = [
   {

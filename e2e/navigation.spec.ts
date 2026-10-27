@@ -83,18 +83,15 @@ test.describe("sem JavaScript", () => {
   });
 });
 
-test("o currículo imprime só o conteúdo, sem menu, rodapé nem botão", async ({ page }) => {
-  // Arrange
-  await page.goto("/curriculo");
-
+// O currículo saiu do site em 2026-10-27; quem tiver o link antigo cai no Sobre, que conta a trajetória.
+test("o endereço antigo do currículo leva ao Sobre", async ({ page }) => {
   // Act
-  await page.emulateMedia({ media: "print" });
+  const response = await page.goto("/curriculo");
 
   // Assert
-  await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
-  await expect(page.getByRole("navigation", { name: "Principal" })).toBeHidden();
-  await expect(page.getByRole("contentinfo")).toBeHidden();
-  await expect(page.getByRole("button", { name: "Imprimir ou salvar em PDF" })).toBeHidden();
+  await expect(page).toHaveURL(/\/sobre$/);
+  expect(response?.status()).toBe(200);
+  await expect(page.getByRole("heading", { level: 1, name: "Sobre" })).toBeVisible();
 });
 
 test("a página do CareFlow leva à demonstração", async ({ page }) => {

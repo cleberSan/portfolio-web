@@ -16,11 +16,6 @@ export function SiteFooter() {
             </Link>
           </li>
           <li>
-            <Link href="/curriculo" className="hover:text-foreground underline">
-              Currículo
-            </Link>
-          </li>
-          <li>
             <ExternalLink href={site.links.linkedin} className="hover:text-foreground underline">
               LinkedIn
             </ExternalLink>

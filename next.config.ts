@@ -15,6 +15,11 @@ const nextConfig: NextConfig = {
     });
     return [{ source: "/:path*", headers: [...securityHeaders] }];
   },
+  async redirects() {
+    // O currículo saiu do site em 2026-10-27 (decisão do Cleber): o site mostra quem ele é e como
+    // trabalha, e o Sobre já conta a trajetória.
+    return [{ source: "/curriculo", destination: "/sobre", permanent: true }];
+  },
   turbopack: {
     rules: {
       "*.css": {

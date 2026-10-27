@@ -5,7 +5,7 @@ type ExperienceTimelineProps = {
   /** Nível do título de cada cargo, para manter a hierarquia da página. */
   headingLevel?: 2 | 3;
   /**
-   * Na completa (Sobre, currículo), destaques e stack aparecem direto; na expansível (home), ficam
+   * Na completa (Sobre), destaques e stack aparecem direto; na expansível (home), ficam
    * num `<details>` que abre sem JavaScript.
    */
   variant?: "expandable" | "full";

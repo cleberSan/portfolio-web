@@ -26,35 +26,8 @@ export const contactChannels: readonly Channel[] = [
   { id: "github", label: "GitHub", value: displayUrl(site.links.github), href: site.links.github },
 ];
 
-type ContactLinksProps = {
-  /**
-   * `cards` (padrão) para a home e o Sobre; `inline` para o currículo, numa linha só e com o
-   * telefone uma vez, porque no papel WhatsApp e telefone são o mesmo número.
-   */
-  layout?: "cards" | "inline";
-};
-
 /** Contatos públicos. E-mail e endereço ficam de fora por decisão do Cleber. */
-export function ContactLinks({ layout = "cards" }: ContactLinksProps) {
-  if (layout === "inline") {
-    return (
-      <ul aria-label="Contato" className="flex flex-wrap gap-x-5 gap-y-1 text-sm">
-        {contactChannels
-          .filter((channel) => channel.id !== "whatsapp")
-          .map((channel) => (
-            <li key={channel.id}>
-              <ChannelLink channel={channel} className="hover:text-accent">
-                <span className="text-muted">
-                  {channel.id === "telefone" ? "Telefone e WhatsApp" : channel.label}:
-                </span>{" "}
-                {channel.value}
-              </ChannelLink>
-            </li>
-          ))}
-      </ul>
-    );
-  }
-
+export function ContactLinks() {
   return (
     <ul aria-label="Contato" className="grid gap-3 sm:grid-cols-2">
       {contactChannels.map((channel) => (

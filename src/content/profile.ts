@@ -1,7 +1,8 @@
 /**
  * Perfil profissional do Cleber, a partir do perfil do LinkedIn que ele enviou (conferido em out 2026).
  * O telefone fica em `site.contact`; endereço e e-mail pessoal ficam de fora de propósito, porque o
- * repositório é público.
+ * repositório é público. O site mostra quem ele é e como trabalha, não é um currículo: nada de
+ * disponibilidade ou busca de vaga aqui (pedido dele em 2026-10-27).
  */
 
 /** Mês no formato `AAAA-MM`. */
@@ -33,12 +34,6 @@ export const profile = {
   /** Data em que o perfil foi conferido; base do cálculo de tempo de carreira. */
   asOf: "2026-10" as YearMonth,
   careerStart: "2019-10" as YearMonth,
-  /** Em recolocação desde a saída da Exactaworks; o que ele busca vem do post #OpenToWork dele. */
-  availability: {
-    label: "Disponível para novas oportunidades",
-    seeking: "Desenvolvedor .NET Backend ou Full-Stack, sênior ou pleno",
-    workModes: "híbrido, presencial ou remoto",
-  },
   bio: [
     "Sou engenheiro de software full-stack sênior e construo sistemas críticos e escaláveis em segmentos bem diferentes: pagamentos digitais, fundos de investimento, gestão de estacionamentos, saúde, previdência e educação.",
     "No backend trabalho com .NET (C#), mensageria assíncrona com RabbitMQ/AMQP e Azure Service Bus e padrões de resiliência como idempotência, retry com backoff e reconciliação de estados. Uso bancos relacionais e NoSQL (SQL Server, PostgreSQL, MySQL, MongoDB) sempre com foco em segurança e consistência dos dados. No frontend, construo portais, webviews e interfaces com React, Angular e ASP.NET Razor.",
@@ -240,7 +235,7 @@ export function formatCareerPeriod(): string {
   return formatPeriod({ start: profile.careerStart, end: profile.asOf });
 }
 
-/** Cargo em andamento; `undefined` enquanto ele está em recolocação. */
+/** Cargo em andamento; `undefined` quando nenhum cargo do perfil está em aberto. */
 export const currentExperience: Experience | undefined = profile.experiences.find(
   (experience: Experience) => !experience.end,
 );
