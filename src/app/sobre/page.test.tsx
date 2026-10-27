@@ -45,21 +45,38 @@ describe("SobrePage", () => {
       "@type": "Person",
       name: site.name,
       sameAs: [site.links.linkedin, site.links.github],
-      worksFor: { name: profile.experiences[0].company },
       alumniOf: [{ name: "UNINOVE" }],
     });
   });
 
-  it("aponta o LinkedIn e o GitHub como contato", () => {
+  it("não declara empregador atual enquanto ele está em recolocação", () => {
+    // Act
+    const { container } = render(<SobrePage />);
+
+    // Assert
+    const script = container.querySelector('script[type="application/ld+json"]');
+    expect(JSON.parse(script?.textContent ?? "{}")).not.toHaveProperty("worksFor");
+  });
+
+  it("aponta WhatsApp, telefone, LinkedIn e GitHub como contato", () => {
     // Act
     render(<SobrePage />);
 
     // Assert
-    expect(screen.getByRole("link", { name: /^LinkedIn/ })).toHaveAttribute(
+    const section = screen.getByRole("region", { name: "Contato" });
+    expect(within(section).getByRole("link", { name: /^WhatsApp/ })).toHaveAttribute(
+      "href",
+      site.contact.whatsapp,
+    );
+    expect(within(section).getByRole("link", { name: /^Telefone/ })).toHaveAttribute(
+      "href",
+      site.contact.phoneHref,
+    );
+    expect(within(section).getByRole("link", { name: /^LinkedIn/ })).toHaveAttribute(
       "href",
       site.links.linkedin,
     );
-    expect(screen.getByRole("link", { name: /^GitHub/ })).toHaveAttribute(
+    expect(within(section).getByRole("link", { name: /^GitHub/ })).toHaveAttribute(
       "href",
       site.links.github,
     );
@@ -89,13 +106,18 @@ describe("SobrePage", () => {
     expect(within(section).getByText("Profissional limitado")).toBeInTheDocument();
   });
 
-  it("não publica telefone, endereço nem e-mail pessoal", () => {
+  // Desde 2026-10-27 o Cleber autoriza publicar o telefone; e-mail e endereço continuam fora.
+  it("publica só o telefone autorizado, sem e-mail nem endereço pessoal", () => {
     // Act
     const { container } = render(<SobrePage />);
 
     // Assert
-    expect(container.textContent).not.toMatch(/@gmail|\(?\d{2}\)?\s?9\d{4}-?\d{4}|Rua /);
-    expect(container.querySelector('a[href^="mailto:"], a[href^="tel:"]')).toBeNull();
+    expect(container.textContent).not.toMatch(/@gmail|Rua /);
+    expect(container.querySelector('a[href^="mailto:"]')).toBeNull();
+    const phones = [...container.querySelectorAll('a[href^="tel:"]')].map((link) =>
+      link.getAttribute("href"),
+    );
+    expect(new Set(phones)).toEqual(new Set([site.contact.phoneHref]));
   });
 
   it("usa /sobre como URL canônica", () => {

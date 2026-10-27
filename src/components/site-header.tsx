@@ -6,11 +6,11 @@ import { NavLinks } from "./nav-links";
 
 export function SiteHeader() {
   return (
-    <header className="border-border bg-background/85 sticky top-0 z-40 border-b backdrop-blur">
-      <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center justify-between gap-x-6 gap-y-3 px-6 py-4">
+    <header className="border-border bg-background/85 sticky top-0 z-40 border-b backdrop-blur print:hidden">
+      <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center justify-between gap-x-6 gap-y-2 px-6 py-3 lg:flex-nowrap">
         <Link
           href="/"
-          className="flex items-center gap-2.5 font-mono text-base font-medium tracking-tight"
+          className="flex shrink-0 items-center gap-2.5 font-mono text-base font-medium tracking-tight"
         >
           <span
             aria-hidden="true"
@@ -18,7 +18,7 @@ export function SiteHeader() {
           />
           {site.name}
         </Link>
-        <nav aria-label="Principal">
+        <nav aria-label="Principal" className="w-full min-w-0 lg:w-auto">
           {/* Em rotas com parâmetro desconhecido no build, usePathname suspende; o fallback
               mantém o cabeçalho pré-renderizado, só sem destacar a seção atual. */}
           <Suspense fallback={<NavLinks items={navigation} />}>

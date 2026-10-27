@@ -2,68 +2,143 @@ import { render, screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { site } from "@/config/site";
 import { careflow, careflowPhases } from "@/content/careflow";
-import { careerYears, currentExperience, profile } from "@/content/profile";
+import { cases } from "@/content/cases";
+import { principles, services } from "@/content/engineering";
+import { careerYears, profile } from "@/content/profile";
 import { stackGroups } from "@/content/stack";
 import { getLatestPosts } from "@/content/posts";
 import Home, { metadata } from "./page";
 
 describe("Home", () => {
-  it("apresenta nome e papel", () => {
+  it("apresenta nome, papel e disponibilidade", () => {
     // Act
     render(<Home />);
 
     // Assert
     expect(screen.getByRole("heading", { level: 1, name: site.name })).toBeInTheDocument();
-    expect(screen.getByText(site.role)).toBeInTheDocument();
+    expect(screen.getByText(`${site.role}.`)).toBeInTheDocument();
+    expect(screen.getByText(new RegExp(`^${profile.availability.label}`))).toBeInTheDocument();
+    expect(screen.getByText(/^Busco: Desenvolvedor \.NET/)).toBeInTheDocument();
   });
 
-  it("mostra os cargos mais recentes, com o atual primeiro", () => {
+  it("não anuncia cargo atual enquanto ele está em recolocação", () => {
     // Act
     render(<Home />);
 
     // Assert
-    const section = screen.getByRole("region", { name: "Trajetória" });
-    const roles = within(section).getAllByRole("heading", { level: 3 });
-    expect(roles).toHaveLength(4);
-    expect(roles[0]).toHaveTextContent(profile.experiences[0].company);
-    expect(
-      within(section).getByRole("link", { name: "Ver a trajetória completa" }),
-    ).toHaveAttribute("href", "/sobre#experiencia");
+    expect(screen.queryByText(/^Agora:/)).not.toBeInTheDocument();
+    expect(screen.queryByText("agora")).not.toBeInTheDocument();
   });
 
-  it("resume as competências por grupo da stack", () => {
+  it("chama para o WhatsApp, os cases e o currículo", () => {
     // Act
     render(<Home />);
 
     // Assert
-    const section = screen.getByRole("region", { name: "Competências" });
-    for (const group of stackGroups) {
-      const list = within(section).getByRole("list", { name: group.title });
-      expect(within(list).getAllByRole("listitem")).toHaveLength(group.items.length);
+    expect(screen.getByRole("link", { name: /^Falar no WhatsApp/ })).toHaveAttribute(
+      "href",
+      site.contact.whatsapp,
+    );
+    expect(screen.getByRole("link", { name: "Ver os cases" })).toHaveAttribute("href", "#cases");
+    expect(screen.getByRole("link", { name: "Currículo" })).toHaveAttribute("href", "/curriculo");
+  });
+
+  it("organiza a página nas seções numeradas do menu", () => {
+    // Act
+    const { container } = render(<Home />);
+
+    // Assert
+    const ids = [...container.querySelectorAll("section[id]")].map((section) => section.id);
+    expect(ids).toEqual([
+      "cases",
+      "atuacao",
+      "sobre",
+      "habilidades",
+      "trajetoria",
+      "diario",
+      "contato",
+    ]);
+  });
+
+  it("mostra cada case com problema, abordagem e resultado", () => {
+    // Act
+    render(<Home />);
+
+    // Assert
+    const section = screen.getByRole("region", { name: "Problemas reais que resolvi" });
+    const articles = within(section).getAllByRole("article");
+    expect(articles).toHaveLength(cases.length);
+    for (const article of articles) {
+      expect(within(article).getByText("Problema")).toBeInTheDocument();
+      expect(within(article).getByText("Abordagem")).toBeInTheDocument();
+      expect(within(article).getByText("Resultado")).toBeInTheDocument();
     }
   });
 
-  it("leva à trajetória, ao Painel, ao projeto CareFlow e ao diário", () => {
+  it("leva dos cases ao CareFlow, ao Painel e à Lojinha", () => {
     // Act
     render(<Home />);
 
     // Assert
-    expect(screen.getByRole("link", { name: "Conhecer minha trajetória" })).toHaveAttribute(
-      "href",
-      "/sobre",
-    );
-    expect(screen.getByRole("link", { name: "Abrir o Painel do CareFlow" })).toHaveAttribute(
-      "href",
-      "/projetos/careflow/painel",
-    );
-    expect(screen.getByRole("link", { name: "Ver arquitetura e roadmap" })).toHaveAttribute(
-      "href",
-      "/projetos/careflow",
-    );
-    expect(screen.getByRole("link", { name: "Ler o diário de bordo" })).toHaveAttribute(
-      "href",
-      "/diario",
-    );
+    const section = screen.getByRole("region", { name: "Problemas reais que resolvi" });
+    expect(
+      within(section).getByRole("link", { name: "Ver arquitetura e roadmap" }),
+    ).toHaveAttribute("href", "/projetos/careflow");
+    expect(
+      within(section).getByRole("link", { name: "Abrir o Painel do CareFlow" }),
+    ).toHaveAttribute("href", "/projetos/careflow/painel");
+    expect(
+      within(section).getByRole("link", { name: "Ver o estudo de caso da Lojinha" }),
+    ).toHaveAttribute("href", "/projetos/lojinha-da-lua");
+  });
+
+  it("lista os serviços e os princípios de trabalho", () => {
+    // Act
+    render(<Home />);
+
+    // Assert
+    const atuacao = screen.getByRole("region", { name: "O que eu entrego" });
+    expect(within(atuacao).getAllByRole("heading", { level: 3 })).toHaveLength(services.length);
+    const sobre = screen.getByRole("region", { name: "Quem sou" });
+    const list = within(sobre).getByRole("list", { name: "Princípios" });
+    expect(within(list).getAllByRole("listitem")).toHaveLength(principles.length);
+  });
+
+  it("mostra a IA no ciclo de engenharia com os portões do CI", () => {
+    // Act
+    render(<Home />);
+
+    // Assert
+    const sobre = screen.getByRole("region", { name: "Quem sou" });
+    expect(within(sobre).getByText("Pipeline deste site")).toBeInTheDocument();
+    expect(within(sobre).getByRole("list", { name: "Portões do CI" })).toBeInTheDocument();
+  });
+
+  it("resume as competências por grupo, com a contagem de cada um", () => {
+    // Act
+    render(<Home />);
+
+    // Assert
+    const section = screen.getByRole("region", { name: "Stack e competências" });
+    for (const group of stackGroups) {
+      const list = within(section).getByRole("list", { name: group.title });
+      expect(within(list).getAllByRole("listitem")).toHaveLength(group.items.length);
+      expect(within(section).getAllByText(`${group.items.length} itens`).length).toBeGreaterThan(0);
+    }
+  });
+
+  it("conta a trajetória inteira, com destaques que abrem sem JavaScript", () => {
+    // Act
+    render(<Home />);
+
+    // Assert
+    const section = screen.getByRole("region", { name: "Experiência e formação" });
+    const roles = within(section)
+      .getAllByRole("heading", { level: 3 })
+      .filter((heading) => heading.textContent?.includes("·"));
+    expect(roles).toHaveLength(profile.experiences.length);
+    expect(section.querySelectorAll("details")).toHaveLength(profile.experiences.length);
+    expect(within(section).getByText(profile.education[0].course)).toBeInTheDocument();
   });
 
   it("mostra os posts mais recentes do diário", () => {
@@ -77,13 +152,33 @@ describe("Home", () => {
     }
   });
 
-  it("lista os setores atendidos", () => {
+  it("fecha com o contato: WhatsApp, telefone, LinkedIn e GitHub", () => {
     // Act
     render(<Home />);
 
     // Assert
-    const section = screen.getByRole("region", { name: "Para quem eu trabalho" });
-    expect(within(section).getAllByRole("listitem")).toHaveLength(site.sectors.length);
+    const section = screen.getByRole("region", { name: "Vamos conversar" });
+    expect(within(section).getByRole("link", { name: /^WhatsApp/ })).toHaveAttribute(
+      "href",
+      site.contact.whatsapp,
+    );
+    expect(within(section).getByRole("link", { name: /^Telefone/ })).toHaveAttribute(
+      "href",
+      site.contact.phoneHref,
+    );
+    expect(within(section).getByRole("link", { name: /^LinkedIn/ })).toHaveAttribute(
+      "href",
+      site.links.linkedin,
+    );
+  });
+
+  it("não publica e-mail nem endereço pessoal", () => {
+    // Act
+    const { container } = render(<Home />);
+
+    // Assert
+    expect(container.textContent).not.toMatch(/@gmail|Rua /);
+    expect(container.querySelector('a[href^="mailto:"]')).toBeNull();
   });
 
   it("mostra a topologia do CareFlow com todos os serviços", () => {
@@ -113,14 +208,17 @@ describe("Home", () => {
     ).toHaveAttribute("href", "/projetos/careflow");
   });
 
-  it("mostra o cargo atual", () => {
+  it("lista as empresas da trajetória", () => {
     // Act
     render(<Home />);
 
     // Assert
+    const list = screen.getByRole("list", { name: "Onde já construí software" });
     expect(
-      screen.getByText(new RegExp(`^Agora: .* na ${currentExperience?.company}`)),
-    ).toBeInTheDocument();
+      within(list)
+        .getAllByRole("listitem")
+        .map((item) => item.textContent),
+    ).toEqual(profile.experiences.map((experience) => experience.company));
   });
 
   it("usa a home como URL canônica", () => {

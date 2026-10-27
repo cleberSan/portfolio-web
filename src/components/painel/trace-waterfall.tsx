@@ -26,7 +26,7 @@ export function TraceWaterfall({ trace, label }: TraceWaterfallProps) {
         role="region"
         aria-label={label}
         tabIndex={0}
-        className="border-border overflow-x-auto rounded-lg border"
+        className="border-border relative overflow-x-auto rounded-lg border"
       >
         <table className="w-full min-w-[40rem] border-collapse text-left text-sm">
           <thead className="bg-surface">

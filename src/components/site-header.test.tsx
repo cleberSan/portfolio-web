@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import { site } from "@/config/site";
 import { SiteHeader } from "./site-header";
 
-vi.mock("next/navigation", () => ({ usePathname: () => "/stack" }));
+vi.mock("next/navigation", () => ({ usePathname: () => "/diario" }));
 
 describe("SiteHeader", () => {
   it("leva o nome do site para a home", () => {
@@ -21,6 +21,7 @@ describe("SiteHeader", () => {
     // Assert
     const nav = screen.getByRole("navigation", { name: "Principal" });
     expect(nav).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Stack" })).toHaveAttribute("aria-current", "page");
+    expect(screen.getByRole("link", { name: "Cases" })).toHaveAttribute("href", "/#cases");
+    expect(screen.getByRole("link", { name: "Diário" })).toHaveAttribute("aria-current", "page");
   });
 });

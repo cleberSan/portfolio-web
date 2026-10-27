@@ -18,7 +18,8 @@ type NavLinksProps = {
 
 export function NavLinks({ items, pathname }: NavLinksProps) {
   return (
-    <ul className="flex flex-wrap gap-x-1 gap-y-1 text-sm">
+    // No celular a lista rola na horizontal em vez de quebrar em várias linhas do cabeçalho fixo.
+    <ul className="-mx-2 flex gap-x-1 overflow-x-auto px-2 text-sm whitespace-nowrap">
       {items.map((item) => {
         const active = isActivePath(pathname, item.href);
         return (
