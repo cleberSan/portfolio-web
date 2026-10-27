@@ -10,37 +10,41 @@ import { getLatestPosts } from "@/content/posts";
 import Home, { metadata } from "./page";
 
 describe("Home", () => {
-  it("apresenta nome, papel e disponibilidade", () => {
+  it("apresenta nome, papel e cidade", () => {
     // Act
     render(<Home />);
 
     // Assert
     expect(screen.getByRole("heading", { level: 1, name: site.name })).toBeInTheDocument();
     expect(screen.getByText(`${site.role}.`)).toBeInTheDocument();
-    expect(screen.getByText(new RegExp(`^${profile.availability.label}`))).toBeInTheDocument();
-    expect(screen.getByText(/^Busco: Desenvolvedor \.NET/)).toBeInTheDocument();
+    expect(screen.getByText(`Portfólio · ${profile.location}`)).toBeInTheDocument();
   });
 
-  it("não anuncia cargo atual enquanto ele está em recolocação", () => {
+  // Pedido do Cleber (2026-10-27): o site mostra quem ele é e como trabalha, não é currículo.
+  it("não fala em busca de vaga, disponibilidade nem currículo", () => {
     // Act
-    render(<Home />);
+    const { container } = render(<Home />);
 
     // Assert
-    expect(screen.queryByText(/^Agora:/)).not.toBeInTheDocument();
+    expect(container.textContent).not.toMatch(/vaga|oportunidade|Busco|Disponível|currículo/i);
+    expect(container.querySelector('a[href="/curriculo"]')).toBeNull();
     expect(screen.queryByText("agora")).not.toBeInTheDocument();
   });
 
-  it("chama para o WhatsApp, os cases e o currículo", () => {
+  it("chama para os cases, o jeito de trabalhar e o WhatsApp", () => {
     // Act
     render(<Home />);
 
     // Assert
+    expect(screen.getByRole("link", { name: "Ver os cases" })).toHaveAttribute("href", "#cases");
+    expect(screen.getByRole("link", { name: "Como eu trabalho" })).toHaveAttribute(
+      "href",
+      "#sobre",
+    );
     expect(screen.getByRole("link", { name: /^Falar no WhatsApp/ })).toHaveAttribute(
       "href",
       site.contact.whatsapp,
     );
-    expect(screen.getByRole("link", { name: "Ver os cases" })).toHaveAttribute("href", "#cases");
-    expect(screen.getByRole("link", { name: "Currículo" })).toHaveAttribute("href", "/curriculo");
   });
 
   it("organiza a página nas seções numeradas do menu", () => {
@@ -97,7 +101,7 @@ describe("Home", () => {
     render(<Home />);
 
     // Assert
-    const atuacao = screen.getByRole("region", { name: "O que eu entrego" });
+    const atuacao = screen.getByRole("region", { name: "Com o que eu trabalho" });
     expect(within(atuacao).getAllByRole("heading", { level: 3 })).toHaveLength(services.length);
     const sobre = screen.getByRole("region", { name: "Quem sou" });
     const list = within(sobre).getByRole("list", { name: "Princípios" });

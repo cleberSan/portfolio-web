@@ -10,7 +10,6 @@ import { siteUrl } from "@/config/site-url";
 import { principles } from "@/content/engineering";
 import { currentExperience, profile } from "@/content/profile";
 import { stackGroups } from "@/content/stack";
-import { formatList } from "@/lib/format-list";
 import { pageMetadata } from "@/lib/metadata";
 
 const description =
@@ -98,16 +97,6 @@ export default function SobrePage() {
         <EducationSummary />
       </section>
 
-      <section aria-labelledby="para-quem" className="space-y-4">
-        <h2 id="para-quem" className="text-2xl font-semibold tracking-tight">
-          Para quem
-        </h2>
-        <p className="text-muted leading-relaxed">
-          Empresas que precisam de soluções críticas em {formatList(site.sectors)}, e startups e
-          scale-ups que buscam arquiteturas modernas, escaláveis e seguras.
-        </p>
-      </section>
-
       <section aria-labelledby="vitrine" className="space-y-4">
         <h2 id="vitrine" className="text-2xl font-semibold tracking-tight">
           Trabalho à vista
@@ -131,9 +120,8 @@ export default function SobrePage() {
           Contato
         </h2>
         <p className="text-muted leading-relaxed">
-          {profile.availability.label}: {profile.availability.seeking}, em formato{" "}
-          {profile.availability.workModes}. O caminho mais rápido é o WhatsApp, e o código de tudo o
-          que aparece aqui está no GitHub.
+          Para conversar sobre engenharia, arquitetura ou algum dos projetos daqui, o caminho mais
+          rápido é o WhatsApp. O código de tudo o que aparece aqui está no GitHub.
         </p>
         <ContactLinks />
       </section>

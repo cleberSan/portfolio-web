@@ -49,7 +49,6 @@ export default function Home() {
   const latestPosts = getLatestPosts(2);
   const phasesDone = careflowPhases.filter((phase) => phase.status === "concluida").length;
   const years = careerYears();
-  const { availability } = profile;
 
   const indicators = [
     { value: `${years} anos`, label: "construindo software que roda em produção" },
@@ -74,9 +73,9 @@ export default function Home() {
             <p className="text-accent flex items-center gap-2.5 font-mono text-xs">
               <span
                 aria-hidden="true"
-                className="text-ok status-dot size-2 shrink-0 rounded-full bg-current"
+                className="status-dot size-2 shrink-0 rounded-full bg-current"
               />
-              {availability.label} · {site.contact.timezone}
+              Portfólio · {profile.location}
             </p>
             <h1 className="text-accent text-3xl font-semibold tracking-tight sm:text-4xl">
               {site.name}
@@ -95,26 +94,21 @@ export default function Home() {
         </div>
 
         <div className="mt-12 space-y-8">
-          <div className="max-w-4xl space-y-3">
-            <p className="text-muted text-lg leading-relaxed">
-              <strong className="text-foreground font-semibold">{site.role}.</strong> Há {years}{" "}
-              anos construo sistemas críticos e escaláveis em {formatList(site.sectors)}: backend
-              resiliente em .NET, mensageria, frontends modernos e observabilidade de ponta a ponta.
-            </p>
-            <p className="text-muted font-mono text-sm leading-relaxed">
-              Busco: {availability.seeking} · {availability.workModes}
-            </p>
-          </div>
+          <p className="text-muted max-w-4xl text-lg leading-relaxed">
+            <strong className="text-foreground font-semibold">{site.role}.</strong> Há {years} anos
+            construo sistemas críticos e escaláveis em {formatList(site.sectors)}: backend
+            resiliente em .NET, mensageria, frontends modernos e observabilidade de ponta a ponta.
+          </p>
           <div className="flex flex-wrap gap-3">
-            <ExternalLink href={site.contact.whatsapp} className={primaryButton}>
-              Falar no WhatsApp
-            </ExternalLink>
-            <Link href="#cases" className={secondaryButton}>
+            <Link href="#cases" className={primaryButton}>
               Ver os cases <span aria-hidden="true">↓</span>
             </Link>
-            <Link href="/curriculo" className={secondaryButton}>
-              Currículo
+            <Link href="#sobre" className={secondaryButton}>
+              Como eu trabalho
             </Link>
+            <ExternalLink href={site.contact.whatsapp} className={secondaryButton}>
+              Falar no WhatsApp
+            </ExternalLink>
           </div>
           <dl className="flex flex-wrap gap-x-12 gap-y-6">
             {indicators.map((indicator, index) => (
@@ -176,8 +170,13 @@ export default function Home() {
       </section>
 
       <section id="atuacao" aria-labelledby="atuacao-titulo" className="space-y-10">
-        <SectionHeading id="atuacao-titulo" index="02" eyebrow="Atuação" title="O que eu entrego">
-          O que levo para um time de produto, com base no que já coloquei em produção.
+        <SectionHeading
+          id="atuacao-titulo"
+          index="02"
+          eyebrow="Atuação"
+          title="Com o que eu trabalho"
+        >
+          As frentes em que construo software, todas com sistemas que já coloquei em produção.
         </SectionHeading>
         <ol className="border-border bg-border grid gap-px overflow-hidden rounded-xl border sm:grid-cols-2 lg:grid-cols-3">
           {services.map((service, index) => (
@@ -188,11 +187,6 @@ export default function Home() {
             </li>
           ))}
         </ol>
-        <p>
-          <Link href="#contato" className={sectionLink}>
-            Conversar sobre uma vaga
-          </Link>
-        </p>
       </section>
 
       <section id="sobre" aria-labelledby="sobre-titulo" className="space-y-10">
@@ -302,11 +296,6 @@ export default function Home() {
           index="05"
           eyebrow="Trajetória"
           title="Experiência e formação"
-          action={
-            <Link href="/curriculo" className={sectionLink}>
-              Ver como currículo
-            </Link>
-          }
         >
           {formatCareerPeriod()}, em {profile.experiences.length} empresas.
         </SectionHeading>
@@ -350,8 +339,8 @@ export default function Home() {
             Vamos conversar
           </h2>
           <p className="text-muted leading-relaxed">
-            Estou disponível para vagas de {availability.seeking}, em formato{" "}
-            {availability.workModes}. O caminho mais rápido é o WhatsApp.
+            Para conversar sobre engenharia, arquitetura ou algum dos projetos daqui, o caminho mais
+            rápido é o WhatsApp. O código de tudo está no GitHub.
           </p>
           <p className="text-muted font-mono text-sm">
             {profile.location} · {site.contact.timezone}

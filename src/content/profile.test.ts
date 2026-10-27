@@ -76,11 +76,16 @@ describe("profile", () => {
     }
   });
 
-  it("registra a saída da Exactaworks e a disponibilidade para novas vagas", () => {
+  it("registra a saída da Exactaworks", () => {
     // Assert
     expect(currentExperience).toBeUndefined();
     expect(profile.experiences[0]).toMatchObject({ company: "Exactaworks", end: "2026-10" });
-    expect(profile.availability.label).toBe("Disponível para novas oportunidades");
+  });
+
+  it("não fala em disponibilidade nem em busca de vaga", () => {
+    // Assert
+    expect(profile).not.toHaveProperty("availability");
+    expect(JSON.stringify(profile)).not.toMatch(/oportunidade|recoloca|OpenToWork/i);
   });
 
   it("não termina nenhum cargo depois da data em que o perfil foi conferido", () => {

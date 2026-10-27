@@ -60,5 +60,4 @@ export const staticRoutes = [
   "/diario",
   "/stack",
   "/sobre",
-  "/curriculo",
 ] as const;

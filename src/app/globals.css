@@ -45,7 +45,7 @@
   }
 }
 
-/* Impressão (currículo em PDF): papel branco e tinta preta, em qualquer tema do sistema. */
+/* Impressão: papel branco e tinta preta, em qualquer tema do sistema. */
 @media print {
   :root {
     --background: #ffffff;

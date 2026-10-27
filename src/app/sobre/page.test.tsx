@@ -22,17 +22,14 @@ describe("SobrePage", () => {
     expect(screen.getByText(/OpenTelemetry e Serilog/)).toBeInTheDocument();
   });
 
-  it("cita os setores atendidos em lista natural", () => {
+  // O site mostra quem ele é e como trabalha; não é currículo nem anúncio de busca de vaga.
+  it("não fala em busca de vaga nem em público-alvo", () => {
     // Act
-    render(<SobrePage />);
+    const { container } = render(<SobrePage />);
 
     // Assert
-    const section = screen.getByRole("region", { name: "Para quem" });
-    expect(
-      within(section).getByText(
-        /pagamentos digitais, fundos de investimento, gestão de estacionamentos, saúde, previdência e educação/,
-      ),
-    ).toBeInTheDocument();
+    expect(container.textContent).not.toMatch(/vaga|oportunidade|Busco|Disponível/i);
+    expect(screen.queryByRole("region", { name: "Para quem" })).not.toBeInTheDocument();
   });
 
   it("publica dados estruturados de pessoa", () => {
@@ -49,7 +46,7 @@ describe("SobrePage", () => {
     });
   });
 
-  it("não declara empregador atual enquanto ele está em recolocação", () => {
+  it("não declara empregador atual quando nenhum cargo está em aberto", () => {
     // Act
     const { container } = render(<SobrePage />);
 
