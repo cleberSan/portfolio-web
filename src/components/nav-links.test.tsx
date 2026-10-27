@@ -43,7 +43,7 @@ describe("NavLinks", () => {
     render(<NavLinks items={navigation} pathname="/" />);
 
     // Assert
-    for (const label of ["Cases", "Serviços", "Trajetória", "Contato"]) {
+    for (const label of ["Cases", "Atuação", "Trajetória", "Contato"]) {
       expect(screen.getByRole("link", { name: label })).not.toHaveAttribute("aria-current");
     }
   });

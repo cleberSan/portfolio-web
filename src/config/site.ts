@@ -42,7 +42,7 @@ export type NavigationItem = { href: `/${string}`; label: string };
 /** Seções da home (âncoras) intercaladas com as páginas que aprofundam cada assunto. */
 export const navigation: readonly NavigationItem[] = [
   { href: "/#cases", label: "Cases" },
-  { href: "/#servicos", label: "Serviços" },
+  { href: "/#atuacao", label: "Atuação" },
   { href: "/#trajetoria", label: "Trajetória" },
   { href: "/projetos", label: "Projetos" },
   { href: "/diario", label: "Diário" },

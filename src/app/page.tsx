@@ -175,8 +175,8 @@ export default function Home() {
         </ol>
       </section>
 
-      <section id="servicos" aria-labelledby="servicos-titulo" className="space-y-10">
-        <SectionHeading id="servicos-titulo" index="02" eyebrow="Serviços" title="O que eu entrego">
+      <section id="atuacao" aria-labelledby="atuacao-titulo" className="space-y-10">
+        <SectionHeading id="atuacao-titulo" index="02" eyebrow="Atuação" title="O que eu entrego">
           O que levo para um time de produto, com base no que já coloquei em produção.
         </SectionHeading>
         <ol className="border-border bg-border grid gap-px overflow-hidden rounded-xl border sm:grid-cols-2 lg:grid-cols-3">

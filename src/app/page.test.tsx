@@ -51,7 +51,7 @@ describe("Home", () => {
     const ids = [...container.querySelectorAll("section[id]")].map((section) => section.id);
     expect(ids).toEqual([
       "cases",
-      "servicos",
+      "atuacao",
       "sobre",
       "habilidades",
       "trajetoria",
@@ -97,8 +97,8 @@ describe("Home", () => {
     render(<Home />);
 
     // Assert
-    const servicos = screen.getByRole("region", { name: "O que eu entrego" });
-    expect(within(servicos).getAllByRole("heading", { level: 3 })).toHaveLength(services.length);
+    const atuacao = screen.getByRole("region", { name: "O que eu entrego" });
+    expect(within(atuacao).getAllByRole("heading", { level: 3 })).toHaveLength(services.length);
     const sobre = screen.getByRole("region", { name: "Quem sou" });
     const list = within(sobre).getByRole("list", { name: "Princípios" });
     expect(within(list).getAllByRole("listitem")).toHaveLength(principles.length);
