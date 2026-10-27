@@ -1,21 +1,21 @@
 import type { Case } from "@/content/cases";
+import { dictionaries } from "@/i18n/dictionaries";
+import type { Locale } from "@/i18n/locales";
 import { SmartLink } from "./smart-link";
 
-const fields = [
-  ["Problema", "problem"],
-  ["Abordagem", "approach"],
-  ["Resultado", "result"],
-] as const;
+const fields = ["problem", "approach", "result"] as const;
 
 type CaseCardProps = {
   item: Case;
   /** Posição na lista, a partir de 1. */
   position: number;
+  locale: Locale;
 };
 
 /** Um case no formato problema, abordagem e resultado, com a stack e os links do projeto. */
-export function CaseCard({ item, position }: CaseCardProps) {
+export function CaseCard({ item, position, locale }: CaseCardProps) {
   const titleId = `case-${item.id}`;
+  const labels = dictionaries[locale].caseCard;
 
   return (
     <article
@@ -33,12 +33,14 @@ export function CaseCard({ item, position }: CaseCardProps) {
         </h3>
       </header>
       <dl className="space-y-4 text-sm leading-relaxed">
-        {fields.map(([label, key]) => (
+        {fields.map((key) => (
           <div
             key={key}
             className={key === "result" ? "border-accent space-y-1 border-l-2 pl-3" : "space-y-1"}
           >
-            <dt className="text-muted font-mono text-xs tracking-[0.12em] uppercase">{label}</dt>
+            <dt className="text-muted font-mono text-xs tracking-[0.12em] uppercase">
+              {labels[key]}
+            </dt>
             <dd className={key === "result" ? "font-medium" : undefined}>{item[key]}</dd>
           </div>
         ))}
@@ -59,6 +61,8 @@ export function CaseCard({ item, position }: CaseCardProps) {
             <SmartLink
               key={link.href}
               href={link.href}
+              hrefLang={link.hrefLang}
+              locale={locale}
               className="text-accent font-medium underline underline-offset-4"
             >
               {link.label}

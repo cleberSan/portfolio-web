@@ -1,4 +1,7 @@
 import { careflow } from "@/content/careflow";
+import { careflowServicesEn } from "@/content/careflow.en";
+import { dictionaries } from "@/i18n/dictionaries";
+import type { Locale } from "@/i18n/locales";
 
 const width = 520;
 const height = 420;
@@ -27,14 +30,24 @@ type TopologyProps = {
   /** Identificador único na página, para o título e a descrição do SVG. */
   id: string;
   className?: string;
+  locale?: Locale;
 };
+
+/** Serviços com nome e sinal no idioma da página. */
+export function topologyServices(locale: Locale): readonly { name: string; signal: string }[] {
+  return careflow.services.map((service) =>
+    locale === "en" ? careflowServicesEn[service.name] : service,
+  );
+}
 
 /**
  * Topologia do CareFlow: os serviços em volta do RabbitMQ, com mensagens indo e voltando.
  * A animação é só CSS (`.topology-pulse` em `globals.css`) e para com movimento reduzido.
  */
-export function Topology({ id, className }: TopologyProps) {
-  const points = layoutNodes(careflow.services.length);
+export function Topology({ id, className, locale = "pt-BR" }: TopologyProps) {
+  const services = topologyServices(locale);
+  const text = dictionaries[locale].topology;
+  const points = layoutNodes(services.length);
   const titleId = `${id}-titulo`;
   const descId = `${id}-descricao`;
 
@@ -45,16 +58,14 @@ export function Topology({ id, className }: TopologyProps) {
       aria-labelledby={`${titleId} ${descId}`}
       className={className}
     >
-      <title id={titleId}>Topologia do CareFlow</title>
+      <title id={titleId}>{text.title}</title>
       <desc id={descId}>
-        {`${careflow.services.length} serviços .NET trocam eventos pelo RabbitMQ com Outbox e Inbox: ${careflow.services
-          .map((service) => service.name)
-          .join(", ")}.`}
+        {text.description(services.length, services.map((service) => service.name).join(", "))}
       </desc>
 
       {points.map((point, index) => (
         <line
-          key={`aresta-${careflow.services[index].name}`}
+          key={`aresta-${services[index].name}`}
           x1={center.x}
           y1={center.y}
           x2={point.x}
@@ -73,7 +84,7 @@ export function Topology({ id, className }: TopologyProps) {
         const [from, to] = outbound ? [center, point] : [point, center];
         return (
           <circle
-            key={`pulso-${careflow.services[index].name}`}
+            key={`pulso-${services[index].name}`}
             r={4}
             className="topology-pulse fill-accent"
             style={{
@@ -112,7 +123,7 @@ export function Topology({ id, className }: TopologyProps) {
         </text>
       </g>
 
-      {careflow.services.map((service, index) => {
+      {services.map((service, index) => {
         const point = points[index];
         return (
           <g key={service.name}>

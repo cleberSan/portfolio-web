@@ -1,4 +1,7 @@
-/** Como o Cleber trabalha: princípios, uso de IA, portões de qualidade e o que ele entrega a um time. */
+/** Como o Cleber trabalha: princípios, uso de IA, portões de qualidade e com o que ele trabalha. */
+
+import type { Locale } from "@/i18n/locales";
+import { engineeringEn } from "./engineering.en";
 
 export type Principle = { title: string; text: string };
 
@@ -38,6 +41,8 @@ export const aiPractice = {
  */
 export type QualityGate = { label: string; ciName: string };
 
+export type QualityPipeline = { stages: readonly string[]; gates: readonly QualityGate[] };
+
 export const qualityPipeline = {
   stages: ["Claude Code escreve", "Eu reviso o PR", "O CI confere", "A Vercel publica"],
   gates: [
@@ -51,6 +56,8 @@ export const qualityPipeline = {
     { label: "CodeQL", ciName: "CodeQL" },
   ] satisfies readonly QualityGate[],
 } as const;
+
+export type CiName = (typeof qualityPipeline.gates)[number]["ciName"];
 
 export type Service = { title: string; description: string };
 
@@ -90,3 +97,30 @@ export const services: readonly Service[] = [
       "Claude Code e GitHub Copilot guiados por regras de arquitetura versionadas no repositório, com revisão humana de tudo.",
   },
 ];
+
+export type AiPractice = { lead: string; items: readonly string[]; close: string };
+
+export type Engineering = {
+  principles: readonly Principle[];
+  aiPractice: AiPractice;
+  qualityPipeline: QualityPipeline;
+  services: readonly Service[];
+};
+
+/** Princípios, IA, pipeline e atuação no idioma da página. Os portões do CI são os mesmos. */
+export function getEngineering(locale: Locale): Engineering {
+  if (locale === "pt-BR") {
+    return { principles, aiPractice, qualityPipeline, services };
+  }
+
+  return {
+    ...engineeringEn,
+    qualityPipeline: {
+      stages: engineeringEn.qualityPipeline.stages,
+      gates: qualityPipeline.gates.map((gate) => ({
+        ...gate,
+        label: engineeringEn.qualityPipeline.gateLabels[gate.ciName],
+      })),
+    },
+  };
+}

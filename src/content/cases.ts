@@ -1,7 +1,14 @@
+import type { Locale } from "@/i18n/locales";
+import { casesTextEn } from "./cases.en";
 import { careflow, careflowPhases } from "./careflow";
 import { lojinha } from "./lojinha";
 
-export type CaseLink = { href: string; label: string };
+export type CaseLink = {
+  href: string;
+  label: string;
+  /** Idioma da página de destino, quando difere do idioma da página atual. */
+  hrefLang?: string;
+};
 
 /**
  * Um problema real e o que foi feito nele, no formato problema, abordagem e resultado.
@@ -25,7 +32,7 @@ export type Case = {
 
 const careflowPhasesDone = careflowPhases.filter((phase) => phase.status === "concluida").length;
 
-export const cases: readonly Case[] = [
+const allCases = [
   {
     id: "pagamentos-resilientes",
     tag: "Pagamentos",
@@ -108,4 +115,29 @@ export const cases: readonly Case[] = [
       { href: lojinha.site, label: "Abrir o site da Lojinha" },
     ],
   },
-];
+] as const satisfies readonly Case[];
+
+export const cases: readonly Case[] = allCases;
+
+export type CaseId = (typeof allCases)[number]["id"];
+
+export type CaseText = Pick<Case, "tag" | "title" | "problem" | "approach" | "result" | "stack"> & {
+  /** Rótulos e idioma de destino dos links, na mesma ordem dos links do case. */
+  links?: readonly Omit<CaseLink, "href">[];
+};
+
+/** Os cases em português ou com os textos de `cases.en.ts`; contexto e destinos dos links não mudam. */
+export function getCases(locale: Locale): readonly Case[] {
+  if (locale === "pt-BR") {
+    return cases;
+  }
+
+  return cases.map((item): Case => {
+    const { links, ...text } = casesTextEn[item.id as CaseId];
+    return {
+      ...item,
+      ...text,
+      links: item.links?.map((link, index) => ({ ...link, ...links?.[index] })),
+    };
+  });
+}

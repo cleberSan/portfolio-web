@@ -1,7 +1,11 @@
 import Link from "next/link";
-import { PageHeader } from "@/components/page-header";
+import { PageHeader } from "./page-header";
 
-export default function NotFound() {
+/**
+ * Conteúdo da página 404, em português, com um atalho para quem veio da versão em inglês. Serve ao
+ * `notFound()` das páginas e ao `global-not-found.tsx`, que atende URLs sem rota nenhuma.
+ */
+export function NotFoundContent() {
   return (
     <div className="max-w-3xl space-y-8">
       <PageHeader title="Página não encontrada" eyebrow="Erro 404">
@@ -17,6 +21,11 @@ export default function NotFound() {
           <Link href="/diario" className="font-medium underline underline-offset-4">
             Ver o diário de bordo
           </Link>
+        </li>
+        <li lang="en">
+          <a href="/en" hrefLang="en" className="font-medium underline underline-offset-4">
+            Go to the English home page
+          </a>
         </li>
       </ul>
     </div>

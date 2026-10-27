@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { ogSize, siteOgAlt } from "@/components/og-card";
 import { site } from "@/config/site";
+import { type Locale, openGraphLocale } from "@/i18n/locales";
+import { languageAlternates } from "@/i18n/routes";
 
 type PageMetadataInput = {
   title: string;
@@ -15,13 +17,23 @@ type PageMetadataInput = {
    * para a do segmento valer também no `twitter:image` e não disputar com ela.
    */
   ownImage?: boolean;
+  /** Idioma da página; o padrão é o português, o idioma original do site. */
+  locale?: Locale;
+};
+
+const ogImagePath: Record<Locale, string> = {
+  "pt-BR": "/opengraph-image",
+  en: "/en/opengraph-image",
 };
 
 /**
- * Imagem gerada por `src/app/opengraph-image.tsx`. Ela só é aplicada sozinha na home; nas
- * demais páginas o `openGraph` da própria página a descarta, então o helper a repete.
+ * Imagem padrão de cada idioma, gerada pelos Route Handlers `app/opengraph-image` e
+ * `app/en/opengraph-image` (`src/lib/site-og-image.tsx`). O helper a coloca em toda página que não
+ * tem imagem própria, já que o `openGraph` da página substitui o do layout.
  */
-const siteOgImage = { url: "/opengraph-image", ...ogSize, alt: siteOgAlt, type: "image/png" };
+function siteOgImage(locale: Locale) {
+  return { url: ogImagePath[locale], ...ogSize, alt: siteOgAlt(locale), type: "image/png" };
+}
 
 /**
  * O Next.js substitui (não mescla) o objeto `openGraph` do layout quando a página define
@@ -36,21 +48,24 @@ export function pageMetadata({
   absoluteTitle = false,
   article,
   ownImage = false,
+  locale = "pt-BR",
 }: PageMetadataInput): Metadata {
+  const languages = languageAlternates(path);
   const shared = {
     title,
     description,
     url: path,
     siteName: site.name,
-    locale: "pt_BR",
+    locale: openGraphLocale[locale],
+    ...(languages ? { alternateLocale: [openGraphLocale[locale === "en" ? "pt-BR" : "en"]] } : {}),
   };
 
-  const images = article || ownImage ? {} : { images: [siteOgImage] };
+  const images = article || ownImage ? {} : { images: [siteOgImage(locale)] };
 
   return {
     title: absoluteTitle ? { absolute: title } : title,
     description,
-    alternates: { canonical: path },
+    alternates: { canonical: path, ...(languages ? { languages } : {}) },
     openGraph: article
       ? {
           ...shared,

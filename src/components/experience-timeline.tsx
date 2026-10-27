@@ -1,7 +1,10 @@
 import { type Experience, formatPeriod } from "@/content/profile";
+import { dictionaries } from "@/i18n/dictionaries";
+import type { Locale } from "@/i18n/locales";
 
 type ExperienceTimelineProps = {
   experiences: readonly Experience[];
+  locale: Locale;
   /** Nível do título de cada cargo, para manter a hierarquia da página. */
   headingLevel?: 2 | 3;
   /**
@@ -13,10 +16,12 @@ type ExperienceTimelineProps = {
 
 export function ExperienceTimeline({
   experiences,
+  locale,
   headingLevel = 3,
   variant = "full",
 }: ExperienceTimelineProps) {
   const Heading = headingLevel === 2 ? "h2" : "h3";
+  const text = dictionaries[locale].experience;
 
   return (
     <ol className="border-border relative space-y-8 border-l pl-6">
@@ -30,10 +35,10 @@ export function ExperienceTimeline({
             />
             <article className="space-y-2">
               <p className="text-muted flex flex-wrap items-center gap-x-3 gap-y-1 font-mono text-xs">
-                <span>{formatPeriod(experience)}</span>
+                <span>{formatPeriod(experience, locale)}</span>
                 {current ? (
                   <span className="text-ok border-border rounded-md border px-1.5 py-0.5">
-                    agora
+                    {text.now}
                   </span>
                 ) : null}
                 <span>{experience.segment}</span>
@@ -43,14 +48,15 @@ export function ExperienceTimeline({
               </Heading>
               <p className="text-muted max-w-3xl leading-relaxed">{experience.summary}</p>
               {variant === "full" ? (
-                <ExperienceDetails experience={experience} />
+                <ExperienceDetails experience={experience} locale={locale} />
               ) : (
                 <details className="group">
                   <summary className="text-accent w-fit cursor-pointer font-mono text-xs underline-offset-4 hover:underline">
-                    Destaques e stack<span className="sr-only"> na {experience.company}</span>
+                    {text.details}
+                    <span className="sr-only"> {text.at(experience.company)}</span>
                   </summary>
                   <div className="mt-3 space-y-2">
-                    <ExperienceDetails experience={experience} />
+                    <ExperienceDetails experience={experience} locale={locale} />
                   </div>
                 </details>
               )}
@@ -62,7 +68,7 @@ export function ExperienceTimeline({
   );
 }
 
-function ExperienceDetails({ experience }: { experience: Experience }) {
+function ExperienceDetails({ experience, locale }: { experience: Experience; locale: Locale }) {
   return (
     <>
       <ul className="max-w-3xl list-disc space-y-1.5 pl-5 text-sm leading-relaxed">
@@ -70,7 +76,10 @@ function ExperienceDetails({ experience }: { experience: Experience }) {
           <li key={highlight}>{highlight}</li>
         ))}
       </ul>
-      <ul aria-label={`Stack na ${experience.company}`} className="flex flex-wrap gap-2">
+      <ul
+        aria-label={`Stack ${dictionaries[locale].experience.at(experience.company)}`}
+        className="flex flex-wrap gap-2"
+      >
         {experience.stack.map((item) => (
           <li
             key={item}

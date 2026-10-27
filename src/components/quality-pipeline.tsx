@@ -1,15 +1,20 @@
-import { qualityPipeline } from "@/content/engineering";
+import { getEngineering } from "@/content/engineering";
+import { dictionaries } from "@/i18n/dictionaries";
+import type { Locale } from "@/i18n/locales";
 
 /** Painel com o caminho de uma mudança até produção e os portões reais do CI deste site. */
-export function QualityPipeline() {
+export function QualityPipeline({ locale }: { locale: Locale }) {
+  const { qualityPipeline } = getEngineering(locale);
+  const text = dictionaries[locale].pipeline;
+
   return (
     <figure className="border-border bg-background overflow-hidden rounded-xl border">
       <figcaption className="border-border flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 border-b px-4 py-3">
-        <span className="font-semibold">Pipeline deste site</span>
+        <span className="font-semibold">{text.title}</span>
         <span className="text-muted font-mono text-xs">claude code · pull request · ci</span>
       </figcaption>
       <ol
-        aria-label="Etapas até produção"
+        aria-label={text.steps}
         className="border-border grid grid-cols-2 gap-px border-b sm:grid-cols-4"
       >
         {qualityPipeline.stages.map((stage, index) => (
@@ -22,7 +27,7 @@ export function QualityPipeline() {
         ))}
       </ol>
       <ul
-        aria-label="Portões do CI"
+        aria-label={text.gates}
         className="grid grid-cols-1 gap-x-6 gap-y-2 px-4 py-4 font-mono text-sm min-[420px]:grid-cols-2"
       >
         {qualityPipeline.gates.map((gate) => (
@@ -33,12 +38,12 @@ export function QualityPipeline() {
               </span>
               {gate.label}
             </span>
-            <span className="text-ok text-xs">obrigatório</span>
+            <span className="text-ok text-xs">{text.required}</span>
           </li>
         ))}
       </ul>
       <p className="text-muted border-border border-t px-4 py-3 text-xs leading-relaxed">
-        A branch principal é protegida: só entra o que passa em todos os portões.
+        {text.note}
       </p>
     </figure>
   );
