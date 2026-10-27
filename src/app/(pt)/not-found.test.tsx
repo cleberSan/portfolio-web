@@ -19,5 +19,8 @@ describe("NotFound", () => {
       "href",
       "/diario",
     );
+    const english = screen.getByRole("link", { name: "Go to the English home page" });
+    expect(english).toHaveAttribute("href", "/en");
+    expect(english.closest('[lang="en"]')).not.toBeNull();
   });
 });

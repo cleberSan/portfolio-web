@@ -5,6 +5,10 @@ import { buildSecurityHeaders } from "./src/config/security-headers";
 
 const nextConfig: NextConfig = {
   cacheComponents: true,
+  experimental: {
+    // Um layout raiz por idioma (ADR-0006): a 404 de URL sem rota vem de `global-not-found.tsx`.
+    globalNotFound: true,
+  },
   partialPrefetching: true,
   poweredByHeader: false,
   reactStrictMode: true,

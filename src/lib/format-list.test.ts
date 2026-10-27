@@ -16,3 +16,13 @@ describe("formatList", () => {
     expect(formatList([])).toBe("");
   });
 });
+
+describe("formatList em inglês", () => {
+  it("usa a vírgula serial e 'and'", () => {
+    // Act
+    const text = formatList(["Digital payments", "Healthcare", "Education"], "en");
+
+    // Assert
+    expect(text).toBe("digital payments, healthcare, and education");
+  });
+});

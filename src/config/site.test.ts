@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { navigation, site, staticRoutes } from "./site";
+import { portugueseLeftovers } from "@/test-utils/portuguese";
+import { getNavigation, getSiteText, navigation, site, staticRoutes, whatsappUrl } from "./site";
 
 function digits(value: string): string {
   return value.replace(/\D/g, "");
@@ -43,6 +44,43 @@ describe("navigation", () => {
       if (hash !== undefined) {
         expect(path).toBe("/");
       }
+    }
+  });
+});
+
+describe("versão em inglês", () => {
+  it("abre o WhatsApp com a saudação em inglês e o mesmo número", () => {
+    // Act
+    const url = new URL(whatsappUrl("en"));
+
+    // Assert
+    expect(url.pathname).toBe(new URL(site.contact.whatsapp).pathname);
+    expect(url.searchParams.get("text")).toMatch(/^Hi, Cleber!/);
+  });
+
+  it("traduz papel, descrição, focos e setores, com as mesmas quantidades", () => {
+    // Act
+    const english = getSiteText("en");
+
+    // Assert
+    expect(getSiteText("pt-BR").role).toBe(site.role);
+    expect(english.role).toBe("Senior Full-Stack Software Engineer");
+    expect(english.sectors).toHaveLength(site.sectors.length);
+    expect(english.focusAreas).toHaveLength(site.focusAreas.length);
+    expect(
+      [english.role, english.description, ...english.sectors, ...english.focusAreas].flatMap(
+        portugueseLeftovers,
+      ),
+    ).toEqual([]);
+  });
+
+  it("o menu em inglês só leva a páginas em inglês", () => {
+    // Assert
+    expect(getNavigation("pt-BR")).toBe(navigation);
+    for (const item of getNavigation("en")) {
+      const [path] = item.href.split("#");
+      expect(staticRoutes).toContain(path);
+      expect(path).toMatch(/^\/en(\/|$)/);
     }
   });
 });

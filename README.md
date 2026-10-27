@@ -12,13 +12,14 @@ Construído com Next.js 16, TypeScript e Tailwind CSS. O projeto vitrine é o [C
 
 | Rota                        | Conteúdo                                                    |
 | --------------------------- | ----------------------------------------------------------- |
-| `/`                         | Apresentação, foco, projeto em destaque e posts recentes    |
+| `/`                         | Cases, atuação, quem sou, competências, trajetória, contato |
 | `/projetos/careflow`        | Arquitetura, princípios e roadmap do CareFlow               |
 | `/projetos/careflow/painel` | Painel de Privacidade e Resiliência (gravação real)         |
 | `/projetos/lojinha-da-lua`  | Estudo de caso do site da Lojinha Da Lua, uma loja real     |
 | `/diario`                   | Diário de bordo em MDX, um post por fase                    |
 | `/stack`                    | Tecnologias, com links para onde aparecem em código público |
 | `/sobre`                    | Experiência, forma de trabalho e contato                    |
+| `/en`, `/en/about`          | Home e Sobre em inglês                                      |
 
 ## Qualidade
 
@@ -26,6 +27,7 @@ Construído com Next.js 16, TypeScript e Tailwind CSS. O projeto vitrine é o [C
 - CSP completa sem nonce, HSTS e demais cabeçalhos em todas as rotas ([ADR-0003](docs/adr/0003-csp-sem-nonce.md)).
 - Testes de unidade com Vitest (mínimo de 80% de cobertura no CI) e E2E com Playwright em desktop e mobile, incluindo axe (WCAG 2.2 AA) nos temas claro e escuro.
 - SEO: metadados e Open Graph por página, imagens Open Graph geradas no build, sitemap, robots e dados estruturados (schema.org).
+- Português e inglês: um layout raiz por idioma, seletor só com links e `hreflang` em cada página traduzida ([ADR-0006](docs/adr/0006-versao-em-ingles.md)).
 
 ## Publicação
 

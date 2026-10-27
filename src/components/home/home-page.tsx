@@ -1,4 +1,3 @@
-import type { Metadata } from "next";
 import Link from "next/link";
 import { CaseCard } from "@/components/case-card";
 import { ContactLinks } from "@/components/contact-links";
@@ -9,22 +8,16 @@ import { PostList } from "@/components/post-list";
 import { QualityPipeline } from "@/components/quality-pipeline";
 import { SectionHeading } from "@/components/section-heading";
 import { Topology } from "@/components/topology";
-import { site } from "@/config/site";
+import { getSiteText, site, whatsappUrl } from "@/config/site";
 import { careflowPhases } from "@/content/careflow";
-import { cases } from "@/content/cases";
-import { aiPractice, principles, services } from "@/content/engineering";
+import { getCases } from "@/content/cases";
+import { getEngineering } from "@/content/engineering";
 import { getLatestPosts } from "@/content/posts";
-import { careerYears, formatCareerPeriod, profile } from "@/content/profile";
-import { stackGroups } from "@/content/stack";
+import { careerYears, formatCareerPeriod, getProfile } from "@/content/profile";
+import { getStackGroups } from "@/content/stack";
+import type { Locale } from "@/i18n/locales";
 import { formatList } from "@/lib/format-list";
-import { pageMetadata } from "@/lib/metadata";
-
-export const metadata: Metadata = pageMetadata({
-  title: `${site.name} | ${site.role}`,
-  description: site.description,
-  path: "/",
-  absoluteTitle: true,
-});
+import { homeText } from "./home-text";
 
 const eyebrow = "text-accent font-mono text-xs font-medium tracking-[0.16em] uppercase";
 const sectionLink = "text-muted hover:text-foreground underline underline-offset-4";
@@ -33,31 +26,44 @@ const primaryButton =
 const secondaryButton =
   "border-border bg-background hover:bg-surface rounded-full border px-6 py-3 font-medium";
 
-/** O último grupo de competências ocupa a linha inteira quando sobraria sozinho nela. */
-const lastGroupSpan = [
-  stackGroups.length % 2 === 1 ? "sm:col-span-2" : "",
-  stackGroups.length % 3 === 1 ? "lg:col-span-3" : "lg:col-span-1",
-].join(" ");
-
-const totalSkills = stackGroups.reduce((total, group) => total + group.items.length, 0);
-
 function twoDigits(value: number): string {
   return String(value).padStart(2, "0");
 }
 
-export default function Home() {
+/** Id do título de uma seção, para a seção apontar para ele com `aria-labelledby`. */
+function headingId(sectionId: string): string {
+  return `${sectionId}-titulo`;
+}
+
+/**
+ * Home de página única, a mesma nos dois idiomas: só os textos mudam. As rotas `app/(pt)/page.tsx`
+ * e `app/en/page.tsx` escolhem o idioma.
+ */
+export function HomePage({ locale }: { locale: Locale }) {
+  const text = homeText[locale];
+  const siteText = getSiteText(locale);
+  const profile = getProfile(locale);
+  const { aiPractice, principles, services } = getEngineering(locale);
+  const stackGroups = getStackGroups(locale);
   const latestPosts = getLatestPosts(2);
   const phasesDone = careflowPhases.filter((phase) => phase.status === "concluida").length;
   const years = careerYears();
+  const totalSkills = stackGroups.reduce((total, group) => total + group.items.length, 0);
+
+  // O último grupo de competências ocupa a linha inteira quando sobraria sozinho nela.
+  const lastGroupSpan = [
+    stackGroups.length % 2 === 1 ? "sm:col-span-2" : "",
+    stackGroups.length % 3 === 1 ? "lg:col-span-3" : "lg:col-span-1",
+  ].join(" ");
 
   const indicators = [
-    { value: `${years} anos`, label: "construindo software que roda em produção" },
-    { value: String(site.sectors.length), label: "setores atendidos, de pagamentos a saúde" },
-    { value: String(profile.experiences.length), label: "empresas na trajetória" },
+    { value: text.indicators.years(years), label: text.indicators.yearsLabel },
+    { value: String(siteText.sectors.length), label: text.indicators.sectorsLabel },
+    { value: String(profile.experiences.length), label: text.indicators.companiesLabel },
     {
       value: String(phasesDone),
-      label: "fases do CareFlow entregues em público",
-      href: "/projetos/careflow",
+      label: text.indicators.phasesLabel,
+      href: text.indicators.phasesHref,
     },
   ];
 
@@ -75,39 +81,37 @@ export default function Home() {
                 aria-hidden="true"
                 className="status-dot size-2 shrink-0 rounded-full bg-current"
               />
-              Portfólio · {profile.location}
+              {text.eyebrow(profile.location)}
             </p>
             <h1 className="text-accent text-3xl font-semibold tracking-tight sm:text-4xl">
               {site.name}
             </h1>
             <p className="text-5xl leading-[1.02] font-semibold tracking-tight text-balance sm:text-6xl lg:text-7xl">
-              Engenheiro de software sênior, especialista em sistemas críticos.
+              {text.statement}
             </p>
           </div>
           <figure className="border-border bg-surface/80 rounded-xl border p-3 sm:p-5">
-            <Topology id="topologia-home" className="h-auto w-full" />
+            <Topology id="topologia-home" className="h-auto w-full" locale={locale} />
             <figcaption className="text-muted border-border mt-3 border-t pt-3 font-mono text-xs">
-              CareFlow, meu projeto vitrine · cada serviço com o próprio banco, eventos com Outbox e
-              Inbox
+              {text.topologyCaption}
             </figcaption>
           </figure>
         </div>
 
         <div className="mt-12 space-y-8">
           <p className="text-muted max-w-4xl text-lg leading-relaxed">
-            <strong className="text-foreground font-semibold">{site.role}.</strong> Há {years} anos
-            construo sistemas críticos e escaláveis em {formatList(site.sectors)}: backend
-            resiliente em .NET, mensageria, frontends modernos e observabilidade de ponta a ponta.
+            <strong className="text-foreground font-semibold">{siteText.role}.</strong>{" "}
+            {text.intro(years, formatList(siteText.sectors, locale))}
           </p>
           <div className="flex flex-wrap gap-3">
-            <Link href="#cases" className={primaryButton}>
-              Ver os cases <span aria-hidden="true">↓</span>
+            <Link href={`#${text.cases.id}`} className={primaryButton}>
+              {text.cta.cases} <span aria-hidden="true">↓</span>
             </Link>
-            <Link href="#sobre" className={secondaryButton}>
-              Como eu trabalho
+            <Link href={`#${text.about.id}`} className={secondaryButton}>
+              {text.cta.how}
             </Link>
-            <ExternalLink href={site.contact.whatsapp} className={secondaryButton}>
-              Falar no WhatsApp
+            <ExternalLink href={whatsappUrl(locale)} locale={locale} className={secondaryButton}>
+              {text.cta.whatsapp}
             </ExternalLink>
           </div>
           <dl className="flex flex-wrap gap-x-12 gap-y-6">
@@ -137,7 +141,7 @@ export default function Home() {
 
         <div className="border-border mt-12 space-y-3 border-t pt-8">
           <p id="empresas" className="text-muted font-mono text-xs tracking-[0.16em] uppercase">
-            Onde já construí software
+            {text.employers}
           </p>
           <ul
             aria-labelledby="empresas"
@@ -150,33 +154,36 @@ export default function Home() {
         </div>
       </header>
 
-      <section id="cases" aria-labelledby="cases-titulo" className="space-y-10">
+      <section id={text.cases.id} aria-labelledby={headingId(text.cases.id)} className="space-y-10">
         <SectionHeading
-          id="cases-titulo"
+          id={headingId(text.cases.id)}
           index="01"
-          eyebrow="Cases"
-          title="Problemas reais que resolvi"
+          eyebrow={text.cases.eyebrow}
+          title={text.cases.title}
         >
-          Cada case diz o problema, como eu ataquei e o que ficou de pé. Os de empresa contam só o
-          que é público; os autorais têm código, decisões e números abertos.
+          {text.cases.lead}
         </SectionHeading>
         <ol className="grid gap-6 lg:grid-cols-2">
-          {cases.map((item, index) => (
+          {getCases(locale).map((item, index) => (
             <li key={item.id}>
-              <CaseCard item={item} position={index + 1} />
+              <CaseCard item={item} position={index + 1} locale={locale} />
             </li>
           ))}
         </ol>
       </section>
 
-      <section id="atuacao" aria-labelledby="atuacao-titulo" className="space-y-10">
+      <section
+        id={text.expertise.id}
+        aria-labelledby={headingId(text.expertise.id)}
+        className="space-y-10"
+      >
         <SectionHeading
-          id="atuacao-titulo"
+          id={headingId(text.expertise.id)}
           index="02"
-          eyebrow="Atuação"
-          title="Com o que eu trabalho"
+          eyebrow={text.expertise.eyebrow}
+          title={text.expertise.title}
         >
-          As frentes em que construo software, todas com sistemas que já coloquei em produção.
+          {text.expertise.lead}
         </SectionHeading>
         <ol className="border-border bg-border grid gap-px overflow-hidden rounded-xl border sm:grid-cols-2 lg:grid-cols-3">
           {services.map((service, index) => (
@@ -189,15 +196,15 @@ export default function Home() {
         </ol>
       </section>
 
-      <section id="sobre" aria-labelledby="sobre-titulo" className="space-y-10">
+      <section id={text.about.id} aria-labelledby={headingId(text.about.id)} className="space-y-10">
         <SectionHeading
-          id="sobre-titulo"
+          id={headingId(text.about.id)}
           index="03"
-          eyebrow="Sobre"
-          title="Quem sou"
+          eyebrow={text.about.eyebrow}
+          title={text.about.title}
           action={
-            <Link href="/sobre" className={sectionLink}>
-              Ler mais sobre mim
+            <Link href={text.about.more.href} className={sectionLink}>
+              {text.about.more.label}
             </Link>
           }
         />
@@ -210,34 +217,34 @@ export default function Home() {
             </div>
             <dl className="border-border bg-border grid gap-px overflow-hidden rounded-lg border sm:grid-cols-2">
               <div className="bg-surface space-y-1 p-4">
-                <dt className="text-muted font-mono text-xs uppercase">Base</dt>
+                <dt className="text-muted font-mono text-xs uppercase">{text.about.base}</dt>
                 <dd>
                   {profile.location} · {site.contact.timezone}
                 </dd>
               </div>
               <div className="bg-surface space-y-1 p-4">
-                <dt className="text-muted font-mono text-xs uppercase">Idiomas</dt>
+                <dt className="text-muted font-mono text-xs uppercase">{text.about.languages}</dt>
                 <dd>
                   {profile.languages
-                    .map((language) => `${language.name} ${language.level.toLowerCase()}`)
+                    .map((language) => text.about.languageLine(language.name, language.level))
                     .join(" · ")}
                 </dd>
               </div>
             </dl>
           </div>
           <div className="space-y-5">
-            <h3 className="text-lg font-semibold">IA no ciclo de engenharia</h3>
+            <h3 className="text-lg font-semibold">{text.about.ai}</h3>
             <p className="text-muted leading-relaxed">{aiPractice.lead}</p>
             <ul className="list-disc space-y-1.5 pl-5 text-sm leading-relaxed">
               {aiPractice.items.map((item) => (
                 <li key={item}>{item}</li>
               ))}
             </ul>
-            <QualityPipeline />
+            <QualityPipeline locale={locale} />
             <p className="text-muted text-sm">{aiPractice.close}</p>
           </div>
         </div>
-        <ol aria-label="Princípios" className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <ol aria-label={text.about.principles} className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {principles.map((principle, index) => (
             <li key={principle.title} className="border-border space-y-2 rounded-lg border p-5">
               <span className="text-accent block font-mono text-xs">{twoDigits(index + 1)}</span>
@@ -248,19 +255,27 @@ export default function Home() {
         </ol>
       </section>
 
-      <section id="habilidades" aria-labelledby="habilidades-titulo" className="space-y-10">
+      <section
+        id={text.skills.id}
+        aria-labelledby={headingId(text.skills.id)}
+        className="space-y-10"
+      >
         <SectionHeading
-          id="habilidades-titulo"
+          id={headingId(text.skills.id)}
           index="04"
-          eyebrow="Habilidades"
-          title="Stack e competências"
+          eyebrow={text.skills.eyebrow}
+          title={text.skills.title}
           action={
-            <Link href="/stack" className={sectionLink}>
-              Ver a stack com evidências no código
+            <Link
+              href={text.skills.more.href}
+              hrefLang={text.skills.more.hrefLang}
+              className={sectionLink}
+            >
+              {text.skills.more.label}
             </Link>
           }
         >
-          {totalSkills} tecnologias e práticas em {stackGroups.length} grupos.
+          {text.skills.lead(totalSkills, stackGroups.length)}
         </SectionHeading>
         <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {stackGroups.map((group, index) => (
@@ -272,7 +287,7 @@ export default function Home() {
                 <h3 className="font-semibold">{group.title}</h3>
                 <span className="text-muted font-mono text-xs">
                   <span aria-hidden="true">{twoDigits(group.items.length)}</span>
-                  <span className="sr-only">{group.items.length} itens</span>
+                  <span className="sr-only">{text.skills.items(group.items.length)}</span>
                 </span>
               </div>
               <ul aria-label={group.title} className="flex flex-wrap gap-1.5">
@@ -290,63 +305,81 @@ export default function Home() {
         </ul>
       </section>
 
-      <section id="trajetoria" aria-labelledby="trajetoria-titulo" className="space-y-10">
+      <section
+        id={text.experience.id}
+        aria-labelledby={headingId(text.experience.id)}
+        className="space-y-10"
+      >
         <SectionHeading
-          id="trajetoria-titulo"
+          id={headingId(text.experience.id)}
           index="05"
-          eyebrow="Trajetória"
-          title="Experiência e formação"
+          eyebrow={text.experience.eyebrow}
+          title={text.experience.title}
         >
-          {formatCareerPeriod()}, em {profile.experiences.length} empresas.
+          {text.experience.lead(formatCareerPeriod(locale), profile.experiences.length)}
         </SectionHeading>
         <div className="grid gap-12 lg:grid-cols-[minmax(0,1.7fr)_minmax(0,1fr)]">
-          <ExperienceTimeline experiences={profile.experiences} variant="expandable" />
+          <ExperienceTimeline
+            experiences={profile.experiences}
+            locale={locale}
+            variant="expandable"
+          />
           <div className="lg:sticky lg:top-24 lg:self-start">
-            <EducationSummary />
+            <EducationSummary locale={locale} />
           </div>
         </div>
       </section>
 
-      <section id="diario" aria-labelledby="diario-titulo" className="space-y-8">
+      <section
+        id={text.buildLog.id}
+        aria-labelledby={headingId(text.buildLog.id)}
+        className="space-y-8"
+      >
         <SectionHeading
-          id="diario-titulo"
+          id={headingId(text.buildLog.id)}
           index="06"
-          eyebrow="Diário"
-          title="Diário de bordo"
+          eyebrow={text.buildLog.eyebrow}
+          title={text.buildLog.title}
           action={
-            <Link href="/diario" className={sectionLink}>
-              Todos os posts
+            <Link
+              href={text.buildLog.more.href}
+              hrefLang={text.buildLog.more.hrefLang}
+              className={sectionLink}
+            >
+              {text.buildLog.more.label}
             </Link>
           }
         >
-          Cada fase do CareFlow vira um post com o que foi decidido e por quê.
+          {text.buildLog.lead}
         </SectionHeading>
-        <div className="[&>ul]:grid [&>ul]:gap-4 [&>ul]:space-y-0 md:[&>ul]:grid-cols-2">
+        {/* Os posts existem só em português: o `lang` avisa leitores de tela e tradutores. */}
+        <div
+          lang="pt-BR"
+          className="[&>ul]:grid [&>ul]:gap-4 [&>ul]:space-y-0 md:[&>ul]:grid-cols-2"
+        >
           <PostList posts={latestPosts} headingLevel={3} />
         </div>
       </section>
 
       <section
-        id="contato"
-        aria-labelledby="contato-titulo"
+        id={text.contact.id}
+        aria-labelledby={headingId(text.contact.id)}
         className="border-border bg-surface grid gap-10 rounded-2xl border p-6 sm:p-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]"
       >
         <div className="space-y-4">
           <p className={eyebrow}>
-            <span className="text-muted">07 · </span>Contato
+            <span className="text-muted">07 · </span>
+            {text.contact.eyebrow}
           </p>
-          <h2 id="contato-titulo" className="text-3xl font-semibold tracking-tight">
-            Vamos conversar
+          <h2 id={headingId(text.contact.id)} className="text-3xl font-semibold tracking-tight">
+            {text.contact.title}
           </h2>
-          <p className="text-muted leading-relaxed">
-            Para conversar sobre engenharia, arquitetura ou algum dos projetos daqui, o caminho mais
-            rápido é o WhatsApp. O código de tudo está no GitHub.
-          </p>
+          <p className="text-muted leading-relaxed">{text.contact.lead}</p>
           <p className="text-muted font-mono text-sm">
             {profile.location} · {site.contact.timezone}
           </p>
         </div>
-        <ContactLinks />
+        <ContactLinks locale={locale} />
       </section>
     </div>
   );

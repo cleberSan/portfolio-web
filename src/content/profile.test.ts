@@ -6,10 +6,12 @@ import {
   formatDuration,
   formatPeriod,
   formatYearMonth,
+  getProfile,
   monthsBetween,
   profile,
   type YearMonth,
 } from "./profile";
+import { portugueseLeftovers } from "@/test-utils/portuguese";
 
 describe("monthsBetween", () => {
   it.each([
@@ -115,5 +117,91 @@ describe("profile", () => {
   it("resume a carreira do primeiro cargo até a data conferida", () => {
     // Assert
     expect(formatCareerPeriod()).toBe("out 2019 – out 2026 · 7 anos e 1 mês");
+  });
+});
+
+describe("getProfile", () => {
+  it("devolve o próprio perfil em português", () => {
+    // Assert
+    expect(getProfile("pt-BR")).toBe(profile);
+  });
+
+  it("em inglês, troca os textos e mantém empresas, datas e stack", () => {
+    // Act
+    const english = getProfile("en");
+
+    // Assert
+    expect(english.experiences).toHaveLength(profile.experiences.length);
+    english.experiences.forEach((experience, index) => {
+      const original = profile.experiences[index];
+      expect(experience).toMatchObject({
+        company: original.company,
+        start: original.start,
+        location: original.location,
+        stack: original.stack,
+      });
+      expect("end" in original ? original.end : undefined).toBe(experience.end);
+      expect(experience.summary).not.toBe(original.summary);
+      expect(experience.highlights).toHaveLength(original.highlights.length);
+    });
+    expect(english.education.map((education) => education.institution)).toEqual(
+      profile.education.map((education) => education.institution),
+    );
+    expect(english.bio).toHaveLength(profile.bio.length);
+    expect(english.certifications).toHaveLength(profile.certifications.length);
+  });
+
+  it("não deixa português esquecido nos textos em inglês", () => {
+    // Arrange
+    const english = getProfile("en");
+    const texts = [
+      english.location,
+      ...english.bio,
+      ...english.experiences.flatMap((experience) => [
+        experience.role,
+        experience.segment,
+        experience.summary,
+        ...experience.highlights,
+      ]),
+      ...english.education.map((education) => education.course),
+      ...english.certifications,
+      ...english.languages.flatMap((language) => [language.name, language.level]),
+    ];
+
+    // Act
+    const leftovers = texts.flatMap(portugueseLeftovers);
+
+    // Assert
+    expect(leftovers).toEqual([]);
+  });
+
+  it("declara o inglês com o mesmo nível do LinkedIn", () => {
+    // Assert
+    expect(getProfile("en").languages).toContainEqual({
+      name: "English",
+      level: "Limited working proficiency",
+    });
+  });
+});
+
+describe("datas e durações em inglês", () => {
+  it.each([
+    [1, "1 month"],
+    [12, "1 year"],
+    [13, "1 year and 1 month"],
+    [44, "3 years and 8 months"],
+  ])("%i meses viram %s", (months, text) => {
+    // Assert
+    expect(formatDuration(months, "en")).toBe(text);
+  });
+
+  it("formata o mês, o período e a carreira em inglês", () => {
+    // Assert
+    expect(formatYearMonth("2025-10", "en")).toBe("Oct 2025");
+    expect(formatPeriod({ start: "2025-04", end: "2025-09" }, "en")).toBe(
+      "Apr 2025 – Sep 2025 · 6 months",
+    );
+    expect(formatPeriod({ start: "2025-10" }, "en")).toBe("Oct 2025 – present");
+    expect(formatCareerPeriod("en")).toBe("Oct 2019 – Oct 2026 · 7 years and 1 month");
   });
 });
