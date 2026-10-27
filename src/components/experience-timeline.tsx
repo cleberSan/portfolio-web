@@ -4,8 +4,11 @@ type ExperienceTimelineProps = {
   experiences: readonly Experience[];
   /** Nível do título de cada cargo, para manter a hierarquia da página. */
   headingLevel?: 2 | 3;
-  /** Na versão compacta (home), só o resumo; na completa (Sobre), destaques e stack. */
-  variant?: "compact" | "full";
+  /**
+   * Na completa (Sobre, currículo), destaques e stack aparecem direto; na expansível (home), ficam
+   * num `<details>` que abre sem JavaScript.
+   */
+  variant?: "expandable" | "full";
 };
 
 export function ExperienceTimeline({
@@ -40,31 +43,43 @@ export function ExperienceTimeline({
               </Heading>
               <p className="text-muted max-w-3xl leading-relaxed">{experience.summary}</p>
               {variant === "full" ? (
-                <>
-                  <ul className="max-w-3xl list-disc space-y-1.5 pl-5 text-sm leading-relaxed">
-                    {experience.highlights.map((highlight) => (
-                      <li key={highlight}>{highlight}</li>
-                    ))}
-                  </ul>
-                  <ul
-                    aria-label={`Stack na ${experience.company}`}
-                    className="flex flex-wrap gap-2"
-                  >
-                    {experience.stack.map((item) => (
-                      <li
-                        key={item}
-                        className="border-border text-muted rounded-md border px-2 py-0.5 font-mono text-xs"
-                      >
-                        {item}
-                      </li>
-                    ))}
-                  </ul>
-                </>
-              ) : null}
+                <ExperienceDetails experience={experience} />
+              ) : (
+                <details className="group">
+                  <summary className="text-accent w-fit cursor-pointer font-mono text-xs underline-offset-4 hover:underline">
+                    Destaques e stack<span className="sr-only"> na {experience.company}</span>
+                  </summary>
+                  <div className="mt-3 space-y-2">
+                    <ExperienceDetails experience={experience} />
+                  </div>
+                </details>
+              )}
             </article>
           </li>
         );
       })}
     </ol>
+  );
+}
+
+function ExperienceDetails({ experience }: { experience: Experience }) {
+  return (
+    <>
+      <ul className="max-w-3xl list-disc space-y-1.5 pl-5 text-sm leading-relaxed">
+        {experience.highlights.map((highlight) => (
+          <li key={highlight}>{highlight}</li>
+        ))}
+      </ul>
+      <ul aria-label={`Stack na ${experience.company}`} className="flex flex-wrap gap-2">
+        {experience.stack.map((item) => (
+          <li
+            key={item}
+            className="border-border text-muted rounded-md border px-2 py-0.5 font-mono text-xs"
+          >
+            {item}
+          </li>
+        ))}
+      </ul>
+    </>
   );
 }

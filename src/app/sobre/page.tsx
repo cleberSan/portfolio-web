@@ -1,39 +1,22 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ExternalLink } from "@/components/external-link";
+import { ContactLinks } from "@/components/contact-links";
+import { EducationSummary } from "@/components/education-summary";
 import { JsonLd } from "@/components/json-ld";
 import { ExperienceTimeline } from "@/components/experience-timeline";
 import { PageHeader } from "@/components/page-header";
 import { site } from "@/config/site";
 import { siteUrl } from "@/config/site-url";
-import { currentExperience, formatYearMonth, profile } from "@/content/profile";
+import { principles } from "@/content/engineering";
+import { currentExperience, profile } from "@/content/profile";
 import { stackGroups } from "@/content/stack";
 import { formatList } from "@/lib/format-list";
 import { pageMetadata } from "@/lib/metadata";
 
 const description =
-  "Trajetória, formação e competências de Cleber Costa Santos, engenheiro de software full-stack sênior em sistemas críticos de pagamentos, fundos de investimento, saúde, previdência e educação.";
+  "Trajetória, formação, competências e contato de Cleber Costa Santos, engenheiro de software full-stack sênior em sistemas críticos de pagamentos, fundos de investimento, saúde, previdência e educação.";
 
 export const metadata: Metadata = pageMetadata({ title: "Sobre", description, path: "/sobre" });
-
-const practices = [
-  {
-    title: "Arquitetura orientada a domínio",
-    text: "DDD, Clean Architecture e Arquitetura Hexagonal para manter regra de negócio explícita, testável e independente de infraestrutura.",
-  },
-  {
-    title: "Testes antes da confiança",
-    text: "TDD e testes automatizados em todos os níveis, com portões de qualidade no CI em vez de revisão só no olho.",
-  },
-  {
-    title: "Observabilidade de ponta a ponta",
-    text: "Logs estruturados, métricas e traces com Datadog, Instana, OpenTelemetry e Serilog, para entender o sistema em produção.",
-  },
-  {
-    title: "IA como ferramenta, não como atalho",
-    text: "Claude Code, GitHub Copilot e Deadalus AI para acelerar e qualificar entregas, sempre com revisão humana do que vai para produção.",
-  },
-] as const;
 
 export default function SobrePage() {
   return (
@@ -99,10 +82,10 @@ export default function SobrePage() {
           Como eu trabalho
         </h2>
         <dl className="space-y-6">
-          {practices.map((practice) => (
-            <div key={practice.title} className="space-y-1">
-              <dt className="font-semibold">{practice.title}</dt>
-              <dd className="text-muted leading-relaxed">{practice.text}</dd>
+          {principles.map((principle) => (
+            <div key={principle.title} className="space-y-1">
+              <dt className="font-semibold">{principle.title}</dt>
+              <dd className="text-muted leading-relaxed">{principle.text}</dd>
             </div>
           ))}
         </dl>
@@ -112,38 +95,7 @@ export default function SobrePage() {
         <h2 id="formacao" className="text-2xl font-semibold tracking-tight">
           Formação e certificações
         </h2>
-        <ul className="space-y-3">
-          {profile.education.map((education) => (
-            <li key={education.course} className="border-border rounded-lg border p-4">
-              <p className="font-semibold">{education.course}</p>
-              <p className="text-muted font-mono text-sm">
-                {education.institution} · {formatYearMonth(education.start)} –{" "}
-                {formatYearMonth(education.end)}
-              </p>
-            </li>
-          ))}
-        </ul>
-        <div className="grid gap-6 sm:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
-          <div className="space-y-3">
-            <h3 className="font-semibold">Certificações</h3>
-            <ul className="text-muted list-disc space-y-1.5 pl-5">
-              {profile.certifications.map((certification) => (
-                <li key={certification}>{certification}</li>
-              ))}
-            </ul>
-          </div>
-          <div className="space-y-3">
-            <h3 className="font-semibold">Idiomas</h3>
-            <dl className="space-y-1.5">
-              {profile.languages.map((language) => (
-                <div key={language.name} className="flex flex-wrap justify-between gap-x-3">
-                  <dt>{language.name}</dt>
-                  <dd className="text-muted">{language.level}</dd>
-                </div>
-              ))}
-            </dl>
-          </div>
-        </div>
+        <EducationSummary />
       </section>
 
       <section aria-labelledby="para-quem" className="space-y-4">
@@ -179,16 +131,11 @@ export default function SobrePage() {
           Contato
         </h2>
         <p className="text-muted leading-relaxed">
-          O caminho mais direto é o{" "}
-          <ExternalLink href={site.links.linkedin} className="text-foreground underline">
-            LinkedIn
-          </ExternalLink>
-          . O código de tudo o que aparece aqui está no{" "}
-          <ExternalLink href={site.links.github} className="text-foreground underline">
-            GitHub
-          </ExternalLink>
-          .
+          {profile.availability.label}: {profile.availability.seeking}, em formato{" "}
+          {profile.availability.workModes}. O caminho mais rápido é o WhatsApp, e o código de tudo o
+          que aparece aqui está no GitHub.
         </p>
+        <ContactLinks />
       </section>
     </div>
   );

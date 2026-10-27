@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   careerYears,
   currentExperience,
+  formatCareerPeriod,
   formatDuration,
   formatPeriod,
   formatYearMonth,
@@ -64,13 +65,30 @@ describe("profile", () => {
     expect(starts).toEqual([...starts].sort().reverse());
   });
 
-  it("tem exatamente um cargo atual, o primeiro da lista", () => {
+  it("tem no máximo um cargo atual, e só no topo da lista", () => {
     // Act
     const current = profile.experiences.filter((experience) => !("end" in experience));
 
     // Assert
-    expect(current).toHaveLength(1);
-    expect(currentExperience).toBe(profile.experiences[0]);
+    expect(current.length).toBeLessThanOrEqual(1);
+    if (currentExperience) {
+      expect(currentExperience).toBe(profile.experiences[0]);
+    }
+  });
+
+  it("registra a saída da Exactaworks e a disponibilidade para novas vagas", () => {
+    // Assert
+    expect(currentExperience).toBeUndefined();
+    expect(profile.experiences[0]).toMatchObject({ company: "Exactaworks", end: "2026-10" });
+    expect(profile.availability.label).toBe("Disponível para novas oportunidades");
+  });
+
+  it("não termina nenhum cargo depois da data em que o perfil foi conferido", () => {
+    // Assert
+    for (const experience of profile.experiences) {
+      const end: YearMonth | undefined = "end" in experience ? experience.end : undefined;
+      expect((end ?? profile.asOf) <= profile.asOf).toBe(true);
+    }
   });
 
   it("nunca termina um cargo antes de começar", () => {
@@ -87,5 +105,10 @@ describe("profile", () => {
     // Assert
     expect(profile.careerStart).toBe(profile.experiences.at(-1)?.start);
     expect(careerYears()).toBe(7);
+  });
+
+  it("resume a carreira do primeiro cargo até a data conferida", () => {
+    // Assert
+    expect(formatCareerPeriod()).toBe("out 2019 – out 2026 · 7 anos e 1 mês");
   });
 });

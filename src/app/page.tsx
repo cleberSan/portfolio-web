@@ -1,12 +1,20 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { CaseCard } from "@/components/case-card";
+import { ContactLinks } from "@/components/contact-links";
+import { EducationSummary } from "@/components/education-summary";
 import { ExperienceTimeline } from "@/components/experience-timeline";
+import { ExternalLink } from "@/components/external-link";
 import { PostList } from "@/components/post-list";
+import { QualityPipeline } from "@/components/quality-pipeline";
+import { SectionHeading } from "@/components/section-heading";
 import { Topology } from "@/components/topology";
 import { site } from "@/config/site";
-import { careflow, careflowPhases } from "@/content/careflow";
+import { careflowPhases } from "@/content/careflow";
+import { cases } from "@/content/cases";
+import { aiPractice, principles, services } from "@/content/engineering";
 import { getLatestPosts } from "@/content/posts";
-import { careerYears, currentExperience, profile } from "@/content/profile";
+import { careerYears, formatCareerPeriod, profile } from "@/content/profile";
 import { stackGroups } from "@/content/stack";
 import { formatList } from "@/lib/format-list";
 import { pageMetadata } from "@/lib/metadata";
@@ -18,8 +26,12 @@ export const metadata: Metadata = pageMetadata({
   absoluteTitle: true,
 });
 
-const sectionTitle = "text-2xl font-semibold tracking-tight";
 const eyebrow = "text-accent font-mono text-xs font-medium tracking-[0.16em] uppercase";
+const sectionLink = "text-muted hover:text-foreground underline underline-offset-4";
+const primaryButton =
+  "bg-accent text-background rounded-full px-6 py-3 font-medium hover:opacity-90";
+const secondaryButton =
+  "border-border bg-background hover:bg-surface rounded-full border px-6 py-3 font-medium";
 
 /** O último grupo de competências ocupa a linha inteira quando sobraria sozinho nela. */
 const lastGroupSpan = [
@@ -27,13 +39,17 @@ const lastGroupSpan = [
   stackGroups.length % 3 === 1 ? "lg:col-span-3" : "lg:col-span-1",
 ].join(" ");
 
-/** Quantos cargos a home mostra; a trajetória inteira fica no Sobre. */
-const recentExperiences = 4;
+const totalSkills = stackGroups.reduce((total, group) => total + group.items.length, 0);
+
+function twoDigits(value: number): string {
+  return String(value).padStart(2, "0");
+}
 
 export default function Home() {
   const latestPosts = getLatestPosts(2);
   const phasesDone = careflowPhases.filter((phase) => phase.status === "concluida").length;
   const years = careerYears();
+  const { availability } = profile;
 
   const indicators = [
     { value: `${years} anos`, label: "construindo software que roda em produção" },
@@ -47,52 +63,27 @@ export default function Home() {
   ];
 
   return (
-    <div className="space-y-24">
+    <div className="space-y-28">
       <header className="relative">
         <div
           aria-hidden="true"
           className="control-grid absolute -inset-x-6 -top-14 bottom-0 -z-10"
         />
-        <div className="grid items-center gap-12 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)]">
+        <div className="grid items-center gap-12 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]">
           <div className="space-y-6">
-            <p className={eyebrow}>{site.role}</p>
-            <h1 className="text-5xl font-semibold tracking-tight text-balance sm:text-6xl">
+            <p className="text-accent flex items-center gap-2.5 font-mono text-xs">
+              <span
+                aria-hidden="true"
+                className="text-ok status-dot size-2 shrink-0 rounded-full bg-current"
+              />
+              {availability.label} · {site.contact.timezone}
+            </p>
+            <h1 className="text-accent text-3xl font-semibold tracking-tight sm:text-4xl">
               {site.name}
             </h1>
-            <p className="text-3xl leading-tight font-medium tracking-tight text-balance sm:text-4xl">
-              Sistemas críticos que você consegue ver funcionando.
+            <p className="text-5xl leading-[1.02] font-semibold tracking-tight text-balance sm:text-6xl lg:text-7xl">
+              Engenheiro de software sênior, especialista em sistemas críticos.
             </p>
-            <p className="text-muted max-w-xl text-lg leading-relaxed">
-              Há {years} anos construo sistemas críticos e escaláveis em {formatList(site.sectors)}:
-              backend resiliente em .NET, mensageria, frontends modernos e observabilidade de ponta
-              a ponta.
-            </p>
-            {currentExperience ? (
-              <p className="text-muted flex items-start gap-2.5 font-mono text-sm">
-                <span
-                  aria-hidden="true"
-                  className="text-ok status-dot mt-1.5 size-2 shrink-0 rounded-full bg-current"
-                />
-                <span>
-                  Agora: {currentExperience.role} na {currentExperience.company} ·{" "}
-                  {currentExperience.segment}
-                </span>
-              </p>
-            ) : null}
-            <div className="flex flex-wrap gap-3 pt-2">
-              <Link
-                href="/sobre"
-                className="bg-accent text-background rounded-md px-5 py-2.5 font-medium hover:opacity-90"
-              >
-                Conhecer minha trajetória
-              </Link>
-              <Link
-                href="/projetos/careflow/painel"
-                className="border-border bg-background hover:bg-surface rounded-md border px-5 py-2.5 font-medium"
-              >
-                Abrir o Painel do CareFlow
-              </Link>
-            </div>
           </div>
           <figure className="border-border bg-surface/80 rounded-xl border p-3 sm:p-5">
             <Topology id="topologia-home" className="h-auto w-full" />
@@ -103,68 +94,193 @@ export default function Home() {
           </figure>
         </div>
 
-        {/* gap-px sobre o fundo da borda desenha as divisórias entre os indicadores. */}
-        <dl className="border-border bg-border mt-14 grid grid-cols-2 gap-px overflow-hidden rounded-xl border lg:grid-cols-4">
-          {indicators.map((indicator) => (
-            <div
-              key={indicator.label}
-              className="bg-surface flex flex-col-reverse justify-end gap-1 p-5"
-            >
-              <dt className="text-muted text-sm leading-snug">
-                {indicator.href ? (
-                  <Link
-                    href={indicator.href}
-                    className="hover:text-foreground underline underline-offset-4"
-                  >
-                    {indicator.label}
-                  </Link>
-                ) : (
-                  indicator.label
-                )}
-              </dt>
-              <dd className="font-mono text-3xl font-medium tabular-nums">{indicator.value}</dd>
-            </div>
-          ))}
-        </dl>
+        <div className="mt-12 space-y-8">
+          <div className="max-w-4xl space-y-3">
+            <p className="text-muted text-lg leading-relaxed">
+              <strong className="text-foreground font-semibold">{site.role}.</strong> Há {years}{" "}
+              anos construo sistemas críticos e escaláveis em {formatList(site.sectors)}: backend
+              resiliente em .NET, mensageria, frontends modernos e observabilidade de ponta a ponta.
+            </p>
+            <p className="text-muted font-mono text-sm leading-relaxed">
+              Busco: {availability.seeking} · {availability.workModes}
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-3">
+            <ExternalLink href={site.contact.whatsapp} className={primaryButton}>
+              Falar no WhatsApp
+            </ExternalLink>
+            <Link href="#cases" className={secondaryButton}>
+              Ver os cases <span aria-hidden="true">↓</span>
+            </Link>
+            <Link href="/curriculo" className={secondaryButton}>
+              Currículo
+            </Link>
+          </div>
+          <dl className="flex flex-wrap gap-x-12 gap-y-6">
+            {indicators.map((indicator, index) => (
+              <div key={indicator.label} className="flex flex-col-reverse gap-1">
+                <dt className="text-muted max-w-[14rem] text-sm leading-snug">
+                  {indicator.href ? (
+                    <Link
+                      href={indicator.href}
+                      className="hover:text-foreground underline underline-offset-4"
+                    >
+                      {indicator.label}
+                    </Link>
+                  ) : (
+                    indicator.label
+                  )}
+                </dt>
+                <dd
+                  className={`font-mono text-4xl font-medium tabular-nums ${index === 0 ? "text-accent" : ""}`}
+                >
+                  {indicator.value}
+                </dd>
+              </div>
+            ))}
+          </dl>
+        </div>
+
+        <div className="border-border mt-12 space-y-3 border-t pt-8">
+          <p id="empresas" className="text-muted font-mono text-xs tracking-[0.16em] uppercase">
+            Onde já construí software
+          </p>
+          <ul
+            aria-labelledby="empresas"
+            className="text-muted flex flex-wrap gap-x-8 gap-y-2 text-lg font-semibold tracking-tight"
+          >
+            {profile.experiences.map((experience) => (
+              <li key={experience.company}>{experience.company}</li>
+            ))}
+          </ul>
+        </div>
       </header>
 
-      <section aria-labelledby="trajetoria" className="space-y-8">
-        <div className="flex flex-wrap items-baseline justify-between gap-4">
-          <div className="space-y-2">
-            <p className={eyebrow}>Experiência</p>
-            <h2 id="trajetoria" className={sectionTitle}>
-              Trajetória
-            </h2>
-          </div>
-          <Link href="/sobre#experiencia" className="text-muted hover:text-foreground underline">
-            Ver a trajetória completa
-          </Link>
-        </div>
-        <ExperienceTimeline
-          experiences={profile.experiences.slice(0, recentExperiences)}
-          variant="compact"
-        />
+      <section id="cases" aria-labelledby="cases-titulo" className="space-y-10">
+        <SectionHeading
+          id="cases-titulo"
+          index="01"
+          eyebrow="Cases"
+          title="Problemas reais que resolvi"
+        >
+          Cada case diz o problema, como eu ataquei e o que ficou de pé. Os de empresa contam só o
+          que é público; os autorais têm código, decisões e números abertos.
+        </SectionHeading>
+        <ol className="grid gap-6 lg:grid-cols-2">
+          {cases.map((item, index) => (
+            <li key={item.id}>
+              <CaseCard item={item} position={index + 1} />
+            </li>
+          ))}
+        </ol>
       </section>
 
-      <section aria-labelledby="competencias" className="space-y-8">
-        <div className="flex flex-wrap items-baseline justify-between gap-4">
-          <div className="space-y-2">
-            <p className={eyebrow}>Skills</p>
-            <h2 id="competencias" className={sectionTitle}>
-              Competências
-            </h2>
-          </div>
-          <Link href="/stack" className="text-muted hover:text-foreground underline">
-            Ver a stack com evidências no código
+      <section id="servicos" aria-labelledby="servicos-titulo" className="space-y-10">
+        <SectionHeading id="servicos-titulo" index="02" eyebrow="Serviços" title="O que eu entrego">
+          O que levo para um time de produto, com base no que já coloquei em produção.
+        </SectionHeading>
+        <ol className="border-border bg-border grid gap-px overflow-hidden rounded-xl border sm:grid-cols-2 lg:grid-cols-3">
+          {services.map((service, index) => (
+            <li key={service.title} className="bg-background space-y-2 p-6">
+              <span className="text-accent block font-mono text-xs">{twoDigits(index + 1)}</span>
+              <h3 className="font-semibold">{service.title}</h3>
+              <p className="text-muted text-sm leading-relaxed">{service.description}</p>
+            </li>
+          ))}
+        </ol>
+        <p>
+          <Link href="#contato" className={sectionLink}>
+            Conversar sobre uma vaga
           </Link>
+        </p>
+      </section>
+
+      <section id="sobre" aria-labelledby="sobre-titulo" className="space-y-10">
+        <SectionHeading
+          id="sobre-titulo"
+          index="03"
+          eyebrow="Sobre"
+          title="Quem sou"
+          action={
+            <Link href="/sobre" className={sectionLink}>
+              Ler mais sobre mim
+            </Link>
+          }
+        />
+        <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+          <div className="space-y-6">
+            <div className="text-muted space-y-4 leading-relaxed">
+              {profile.bio.slice(0, 2).map((paragraph) => (
+                <p key={paragraph}>{paragraph}</p>
+              ))}
+            </div>
+            <dl className="border-border bg-border grid gap-px overflow-hidden rounded-lg border sm:grid-cols-2">
+              <div className="bg-surface space-y-1 p-4">
+                <dt className="text-muted font-mono text-xs uppercase">Base</dt>
+                <dd>
+                  {profile.location} · {site.contact.timezone}
+                </dd>
+              </div>
+              <div className="bg-surface space-y-1 p-4">
+                <dt className="text-muted font-mono text-xs uppercase">Idiomas</dt>
+                <dd>
+                  {profile.languages
+                    .map((language) => `${language.name} ${language.level.toLowerCase()}`)
+                    .join(" · ")}
+                </dd>
+              </div>
+            </dl>
+          </div>
+          <div className="space-y-5">
+            <h3 className="text-lg font-semibold">IA no ciclo de engenharia</h3>
+            <p className="text-muted leading-relaxed">{aiPractice.lead}</p>
+            <ul className="list-disc space-y-1.5 pl-5 text-sm leading-relaxed">
+              {aiPractice.items.map((item) => (
+                <li key={item}>{item}</li>
+              ))}
+            </ul>
+            <QualityPipeline />
+            <p className="text-muted text-sm">{aiPractice.close}</p>
+          </div>
         </div>
+        <ol aria-label="Princípios" className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {principles.map((principle, index) => (
+            <li key={principle.title} className="border-border space-y-2 rounded-lg border p-5">
+              <span className="text-accent block font-mono text-xs">{twoDigits(index + 1)}</span>
+              <h3 className="font-semibold">{principle.title}</h3>
+              <p className="text-muted text-sm leading-relaxed">{principle.text}</p>
+            </li>
+          ))}
+        </ol>
+      </section>
+
+      <section id="habilidades" aria-labelledby="habilidades-titulo" className="space-y-10">
+        <SectionHeading
+          id="habilidades-titulo"
+          index="04"
+          eyebrow="Habilidades"
+          title="Stack e competências"
+          action={
+            <Link href="/stack" className={sectionLink}>
+              Ver a stack com evidências no código
+            </Link>
+          }
+        >
+          {totalSkills} tecnologias e práticas em {stackGroups.length} grupos.
+        </SectionHeading>
         <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {stackGroups.map((group, index) => (
             <li
               key={group.id}
               className={`border-border space-y-3 rounded-lg border p-5 ${index === stackGroups.length - 1 ? lastGroupSpan : ""}`}
             >
-              <h3 className="font-semibold">{group.title}</h3>
+              <div className="flex items-baseline justify-between gap-3">
+                <h3 className="font-semibold">{group.title}</h3>
+                <span className="text-muted font-mono text-xs">
+                  <span aria-hidden="true">{twoDigits(group.items.length)}</span>
+                  <span className="sr-only">{group.items.length} itens</span>
+                </span>
+              </div>
               <ul aria-label={group.title} className="flex flex-wrap gap-1.5">
                 {group.items.map((item) => (
                   <li
@@ -180,76 +296,68 @@ export default function Home() {
         </ul>
       </section>
 
-      <section
-        aria-labelledby="careflow"
-        className="border-border bg-surface grid gap-8 rounded-xl border p-6 sm:p-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]"
-      >
-        <div className="space-y-4">
-          <p className={eyebrow}>Projeto em destaque</p>
-          <h2 id="careflow" className="text-3xl font-semibold tracking-tight">
-            {careflow.name}
-          </h2>
-          <p className="text-muted leading-relaxed">
-            {careflow.tagline} Construído em fases públicas com .NET e microsserviços, cada etapa
-            vira código revisado, decisões registradas e um post neste diário.
-          </p>
-          <div className="flex flex-wrap gap-x-6 gap-y-2 pt-1">
-            <Link
-              href="/projetos/careflow"
-              className="text-accent font-medium underline underline-offset-4"
-            >
-              Ver arquitetura e roadmap
+      <section id="trajetoria" aria-labelledby="trajetoria-titulo" className="space-y-10">
+        <SectionHeading
+          id="trajetoria-titulo"
+          index="05"
+          eyebrow="Trajetória"
+          title="Experiência e formação"
+          action={
+            <Link href="/curriculo" className={sectionLink}>
+              Ver como currículo
             </Link>
-            <Link href="/diario" className="text-accent font-medium underline underline-offset-4">
-              Ler o diário de bordo
-            </Link>
+          }
+        >
+          {formatCareerPeriod()}, em {profile.experiences.length} empresas.
+        </SectionHeading>
+        <div className="grid gap-12 lg:grid-cols-[minmax(0,1.7fr)_minmax(0,1fr)]">
+          <ExperienceTimeline experiences={profile.experiences} variant="expandable" />
+          <div className="lg:sticky lg:top-24 lg:self-start">
+            <EducationSummary />
           </div>
         </div>
-        <ul aria-label="Serviços do CareFlow" className="grid gap-2 sm:grid-cols-2">
-          {careflow.services.map((service) => (
-            <li
-              key={service.name}
-              className="border-border bg-background rounded-md border px-3 py-2.5"
-            >
-              <span className="block text-sm font-semibold">{service.name}</span>
-              <span className="text-muted block font-mono text-xs">{service.signal}</span>
-            </li>
-          ))}
-        </ul>
       </section>
 
-      <section aria-labelledby="diario" className="space-y-6">
-        <div className="flex flex-wrap items-baseline justify-between gap-4">
-          <h2 id="diario" className={sectionTitle}>
-            Diário de bordo
-          </h2>
-          <Link href="/diario" className="text-muted hover:text-foreground underline">
-            Todos os posts
-          </Link>
-        </div>
+      <section id="diario" aria-labelledby="diario-titulo" className="space-y-8">
+        <SectionHeading
+          id="diario-titulo"
+          index="06"
+          eyebrow="Diário"
+          title="Diário de bordo"
+          action={
+            <Link href="/diario" className={sectionLink}>
+              Todos os posts
+            </Link>
+          }
+        >
+          Cada fase do CareFlow vira um post com o que foi decidido e por quê.
+        </SectionHeading>
         <div className="[&>ul]:grid [&>ul]:gap-4 [&>ul]:space-y-0 md:[&>ul]:grid-cols-2">
           <PostList posts={latestPosts} headingLevel={3} />
         </div>
       </section>
 
-      <section aria-labelledby="setores" className="space-y-4">
-        <h2 id="setores" className={sectionTitle}>
-          Para quem eu trabalho
-        </h2>
-        <p className="text-muted max-w-2xl leading-relaxed">
-          Empresas que precisam de soluções críticas nestes setores, e startups e scale-ups que
-          buscam arquiteturas modernas, escaláveis e seguras.
-        </p>
-        <ul className="flex flex-wrap gap-2">
-          {site.sectors.map((sector) => (
-            <li
-              key={sector}
-              className="border-border bg-surface rounded-md border px-3 py-1.5 font-mono text-sm"
-            >
-              {sector}
-            </li>
-          ))}
-        </ul>
+      <section
+        id="contato"
+        aria-labelledby="contato-titulo"
+        className="border-border bg-surface grid gap-10 rounded-2xl border p-6 sm:p-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]"
+      >
+        <div className="space-y-4">
+          <p className={eyebrow}>
+            <span className="text-muted">07 · </span>Contato
+          </p>
+          <h2 id="contato-titulo" className="text-3xl font-semibold tracking-tight">
+            Vamos conversar
+          </h2>
+          <p className="text-muted leading-relaxed">
+            Estou disponível para vagas de {availability.seeking}, em formato{" "}
+            {availability.workModes}. O caminho mais rápido é o WhatsApp.
+          </p>
+          <p className="text-muted font-mono text-sm">
+            {profile.location} · {site.contact.timezone}
+          </p>
+        </div>
+        <ContactLinks />
       </section>
     </div>
   );

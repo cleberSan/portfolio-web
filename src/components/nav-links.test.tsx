@@ -38,6 +38,16 @@ describe("NavLinks", () => {
     expect(screen.getByRole("link", { name: "Sobre" })).not.toHaveAttribute("aria-current");
   });
 
+  it("nunca marca as âncoras da home como página atual", () => {
+    // Act
+    render(<NavLinks items={navigation} pathname="/" />);
+
+    // Assert
+    for (const label of ["Cases", "Serviços", "Trajetória", "Contato"]) {
+      expect(screen.getByRole("link", { name: label })).not.toHaveAttribute("aria-current");
+    }
+  });
+
   it("não marca nada sem pathname", () => {
     // Act
     render(<NavLinks items={navigation} />);

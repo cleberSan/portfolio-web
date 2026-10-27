@@ -178,7 +178,7 @@ export default function PainelPage() {
           role="region"
           aria-label="O paciente em cada serviço"
           tabIndex={0}
-          className="border-border overflow-x-auto rounded-lg border"
+          className="border-border relative overflow-x-auto rounded-lg border"
         >
           <table className="w-full min-w-[36rem] border-collapse text-left text-sm">
             <thead className="bg-surface">
@@ -298,7 +298,7 @@ export default function PainelPage() {
           role="region"
           aria-label="Trilha de auditoria do paciente"
           tabIndex={0}
-          className="border-border overflow-x-auto rounded-lg border"
+          className="border-border relative overflow-x-auto rounded-lg border"
         >
           <table className="w-full min-w-[30rem] border-collapse text-left text-sm">
             <caption className="text-muted px-3 py-2 text-left">
@@ -384,7 +384,7 @@ export default function PainelPage() {
           role="region"
           aria-label="Triagens na trilha de auditoria"
           tabIndex={0}
-          className="border-border overflow-x-auto rounded-lg border"
+          className="border-border relative overflow-x-auto rounded-lg border"
         >
           <table className="w-full min-w-[30rem] border-collapse text-left text-sm">
             <caption className="text-muted px-3 py-2 text-left">
@@ -492,7 +492,7 @@ export default function PainelPage() {
             role="region"
             aria-label="Comprovante de eliminação"
             tabIndex={0}
-            className="border-border overflow-x-auto rounded-lg border"
+            className="border-border relative overflow-x-auto rounded-lg border"
           >
             <table className="w-full min-w-[40rem] border-collapse text-left text-sm">
               <caption className="text-muted px-3 py-2 text-left">
@@ -539,7 +539,7 @@ export default function PainelPage() {
           role="region"
           aria-label="Pedidos do titular na trilha de auditoria"
           tabIndex={0}
-          className="border-border overflow-x-auto rounded-lg border"
+          className="border-border relative overflow-x-auto rounded-lg border"
         >
           <table className="w-full min-w-[30rem] border-collapse text-left text-sm">
             <caption className="text-muted px-3 py-2 text-left">

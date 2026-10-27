@@ -51,16 +51,50 @@ test("a home leva ao projeto CareFlow", async ({ page }) => {
   await expect(page.getByRole("note")).toContainText("dados sintéticos");
 });
 
-test("a home leva à trajetória completa no Sobre", async ({ page }) => {
+test("o menu leva às seções da home a partir de outra página", async ({ page }) => {
   // Arrange
-  await page.goto("/");
+  await page.goto("/sobre");
+  const nav = page.getByRole("navigation", { name: "Principal" });
 
   // Act
-  await page.getByRole("link", { name: "Ver a trajetória completa" }).click();
+  await nav.getByRole("link", { name: "Cases" }).click();
 
   // Assert
-  await expect(page).toHaveURL(/\/sobre#experiencia$/);
-  await expect(page.getByRole("heading", { level: 2, name: "Experiência" })).toBeInViewport();
+  await expect(page).toHaveURL(/\/#cases$/);
+  await expect(
+    page.getByRole("heading", { level: 2, name: "Problemas reais que resolvi" }),
+  ).toBeInViewport();
+});
+
+test.describe("sem JavaScript", () => {
+  test.use({ javaScriptEnabled: false });
+
+  test("os destaques de cada cargo abrem na home", async ({ page }) => {
+    // Arrange
+    await page.goto("/#trajetoria");
+    const stack = page.getByRole("list", { name: "Stack na Exactaworks" });
+    await expect(stack).toBeHidden();
+
+    // Act
+    await page.getByText("Destaques e stack").first().click();
+
+    // Assert
+    await expect(stack).toBeVisible();
+  });
+});
+
+test("o currículo imprime só o conteúdo, sem menu, rodapé nem botão", async ({ page }) => {
+  // Arrange
+  await page.goto("/curriculo");
+
+  // Act
+  await page.emulateMedia({ media: "print" });
+
+  // Assert
+  await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+  await expect(page.getByRole("navigation", { name: "Principal" })).toBeHidden();
+  await expect(page.getByRole("contentinfo")).toBeHidden();
+  await expect(page.getByRole("button", { name: "Imprimir ou salvar em PDF" })).toBeHidden();
 });
 
 test("a página do CareFlow leva à demonstração", async ({ page }) => {
