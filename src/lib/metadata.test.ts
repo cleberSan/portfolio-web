@@ -35,7 +35,7 @@ describe("pageMetadata", () => {
       url: "/opengraph-image",
       width: 1200,
       height: 630,
-      alt: siteOgAlt,
+      alt: siteOgAlt("pt-BR"),
       type: "image/png",
     };
 
@@ -105,5 +105,40 @@ describe("pageMetadata", () => {
     expect(metadata.openGraph).toMatchObject({ type: "website", url: "/projetos/careflow" });
     expect(metadata.openGraph?.images).toBeUndefined();
     expect(metadata.twitter?.images).toBeUndefined();
+  });
+});
+
+describe("pageMetadata com idiomas", () => {
+  it("declara as versões da página traduzida e o idioma do Open Graph", () => {
+    // Act
+    const metadata = pageMetadata({
+      title: "About",
+      description: "Who I am",
+      path: "/en/about",
+      locale: "en",
+    });
+
+    // Assert
+    expect(metadata.alternates?.languages).toEqual({
+      "pt-BR": "/sobre",
+      en: "/en/about",
+      "x-default": "/sobre",
+    });
+    expect(metadata.openGraph).toMatchObject({ locale: "en_US", alternateLocale: ["pt_BR"] });
+    expect(metadata.openGraph?.images).toEqual([
+      expect.objectContaining({
+        url: "/en/opengraph-image",
+        alt: "Cleber Costa Santos, Senior Full-Stack Software Engineer",
+      }),
+    ]);
+  });
+
+  it("página só em português não declara alternativa de idioma", () => {
+    // Act
+    const metadata = pageMetadata({ title: "Stack", description: "Ferramentas", path: "/stack" });
+
+    // Assert
+    expect(metadata.alternates?.languages).toBeUndefined();
+    expect(metadata.openGraph).not.toHaveProperty("alternateLocale");
   });
 });

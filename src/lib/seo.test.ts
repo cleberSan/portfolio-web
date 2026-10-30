@@ -51,3 +51,24 @@ describe("buildSitemap", () => {
     expect(entry.lastModified).toEqual(new Date("2026-10-14T00:00:00Z"));
   });
 });
+
+describe("buildSitemap com idiomas", () => {
+  it("liga as versões em português e em inglês com hreflang", () => {
+    // Act
+    const [home, english, stack] = buildSitemap(
+      new URL("https://cleber.dev"),
+      ["/sobre", "/en/about", "/stack"],
+      [],
+    );
+
+    // Assert
+    const languages = {
+      "pt-BR": "https://cleber.dev/sobre",
+      en: "https://cleber.dev/en/about",
+      "x-default": "https://cleber.dev/sobre",
+    };
+    expect(home.alternates).toEqual({ languages });
+    expect(english.alternates).toEqual({ languages });
+    expect(stack.alternates).toBeUndefined();
+  });
+});

@@ -1,21 +1,26 @@
-import { site } from "@/config/site";
+import { getSiteText, site } from "@/config/site";
+import type { Locale } from "@/i18n/locales";
 
 export const ogSize = { width: 1200, height: 630 };
 
-/** Texto alternativo da imagem Open Graph padrão do site (`src/app/opengraph-image.tsx`). */
-export const siteOgAlt = `${site.name}, ${site.role}`;
+/** Texto alternativo da imagem Open Graph padrão de cada idioma (`src/lib/site-og-image.tsx`). */
+export function siteOgAlt(locale: Locale = "pt-BR"): string {
+  return `${site.name}, ${getSiteText(locale).role}`;
+}
 
 type OgCardProps = {
   eyebrow: string;
   title: string;
   subtitle: string;
+  /** Idioma da assinatura no rodapé da imagem. */
+  locale?: Locale;
 };
 
 /**
  * Layout das imagens Open Graph. Renderizado pelo `ImageResponse` (Satori), que só
  * entende estilos inline e exige `display: flex` em elementos com mais de um filho.
  */
-export function OgCard({ eyebrow, title, subtitle }: OgCardProps) {
+export function OgCard({ eyebrow, title, subtitle, locale = "pt-BR" }: OgCardProps) {
   return (
     <div
       style={{
@@ -56,7 +61,7 @@ export function OgCard({ eyebrow, title, subtitle }: OgCardProps) {
         <div style={{ display: "flex", fontSize: 32, color: "#94a3b8" }}>{subtitle}</div>
       </div>
       <div style={{ display: "flex", fontSize: 28, color: "#94a3b8" }}>
-        {site.name} · {site.role}
+        {site.name} · {getSiteText(locale).role}
       </div>
     </div>
   );

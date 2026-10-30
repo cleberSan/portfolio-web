@@ -14,6 +14,26 @@ for (const path of allPages) {
       await expect(page).toHaveTitle(/Cleber/);
     });
 
+    test("não rola na horizontal", async ({ page }) => {
+      // Act
+      await page.goto(path);
+
+      // Assert
+      const overflow = await page.evaluate(
+        () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+      );
+      expect(overflow).toBeLessThanOrEqual(0);
+    });
+
+    test("não publica e-mail pessoal", async ({ page }) => {
+      // Act
+      await page.goto(path);
+
+      // Assert
+      await expect(page.locator('a[href^="mailto:"]')).toHaveCount(0);
+      expect(await page.locator("body").innerText()).not.toMatch(/@gmail\.com/i);
+    });
+
     for (const colorScheme of ["light", "dark"] as const) {
       test(`não tem violações de acessibilidade WCAG 2.2 AA no tema ${colorScheme}`, async ({
         page,

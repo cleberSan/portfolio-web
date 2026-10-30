@@ -1,3 +1,6 @@
+import type { Locale } from "@/i18n/locales";
+import { stackTextEn } from "./stack.en";
+
 const careflowTree = "https://github.com/cleberSan/careflow/tree/main";
 const careflowBlob = "https://github.com/cleberSan/careflow/blob/main";
 
@@ -16,7 +19,7 @@ export type StackGroup = {
   items: readonly StackItem[];
 };
 
-export const stackGroups: readonly StackGroup[] = [
+const groups = [
   {
     id: "backend",
     title: "Backend e arquitetura",
@@ -165,7 +168,27 @@ export const stackGroups: readonly StackGroup[] = [
     summary: "Ferramentas de IA para acelerar e qualificar entregas, sempre com revisão humana.",
     items: [{ name: "Claude Code" }, { name: "GitHub Copilot" }, { name: "Deadalus AI" }],
   },
-];
+] as const satisfies readonly StackGroup[];
+
+export const stackGroups: readonly StackGroup[] = groups;
+
+export type StackGroupId = (typeof groups)[number]["id"];
+
+/**
+ * Grupos de competências no idioma da página. Em inglês, as evidências (que apontam para a página
+ * Stack, só em português) ficam de fora, e itens sem tradução mantêm o nome original da tecnologia.
+ */
+export function getStackGroups(locale: Locale): readonly StackGroup[] {
+  if (locale === "pt-BR") {
+    return stackGroups;
+  }
+
+  return stackGroups.map((group) => ({
+    id: group.id,
+    ...stackTextEn.groups[group.id as StackGroupId],
+    items: group.items.map((item) => ({ name: stackTextEn.items[item.name] ?? item.name })),
+  }));
+}
 
 /** Ferramentas que só aparecem no CareFlow; ficam separadas para não se misturar com a experiência profissional. */
 export const careflowTooling: readonly StackItem[] = [

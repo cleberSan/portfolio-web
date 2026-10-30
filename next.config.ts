@@ -5,6 +5,10 @@ import { buildSecurityHeaders } from "./src/config/security-headers";
 
 const nextConfig: NextConfig = {
   cacheComponents: true,
+  experimental: {
+    // Um layout raiz por idioma (ADR-0006): a 404 de URL sem rota vem de `global-not-found.tsx`.
+    globalNotFound: true,
+  },
   partialPrefetching: true,
   poweredByHeader: false,
   reactStrictMode: true,
@@ -14,6 +18,11 @@ const nextConfig: NextConfig = {
       demoBackend,
     });
     return [{ source: "/:path*", headers: [...securityHeaders] }];
+  },
+  async redirects() {
+    // O currículo saiu do site em 2026-10-27 (decisão do Cleber): o site mostra quem ele é e como
+    // trabalha, e o Sobre já conta a trajetória.
+    return [{ source: "/curriculo", destination: "/sobre", permanent: true }];
   },
   turbopack: {
     rules: {
