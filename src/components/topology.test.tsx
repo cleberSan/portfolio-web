@@ -1,7 +1,7 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { careflow } from "@/content/careflow";
-import { layoutNodes, Topology } from "./topology";
+import { layoutNodes, Topology, topologyServices } from "./topology";
 
 describe("layoutNodes", () => {
   it("começa no topo e não repete posições", () => {
@@ -47,5 +47,35 @@ describe("Topology", () => {
     const pulses = container.querySelectorAll("circle.topology-pulse");
     expect(pulses).toHaveLength(4);
     expect((pulses[0] as SVGCircleElement).style.offsetPath).toContain("path(");
+  });
+});
+
+describe("Topology em inglês", () => {
+  it("dá nome, sinal e descrição em inglês para cada serviço", () => {
+    // Act
+    render(<Topology id="t" locale="en" />);
+
+    // Assert
+    const topology = screen.getByRole("img", { name: /^CareFlow topology/ });
+    for (const service of topologyServices("en")) {
+      expect(within(topology).getByText(service.name)).toBeInTheDocument();
+      expect(within(topology).getByText(service.signal)).toBeInTheDocument();
+    }
+    expect(topology).toHaveAccessibleName(/services exchange events over RabbitMQ/);
+  });
+
+  it("cabe nas caixas do desenho: nenhum texto em inglês é maior que o maior em português", () => {
+    // Arrange
+    const longest = (texts: string[]) => Math.max(...texts.map((text) => text.length));
+    const portuguese = topologyServices("pt-BR");
+    const english = topologyServices("en");
+
+    // Assert
+    expect(longest(english.map((service) => service.name))).toBeLessThanOrEqual(
+      longest(portuguese.map((service) => service.name)),
+    );
+    expect(longest(english.map((service) => service.signal))).toBeLessThanOrEqual(
+      longest(portuguese.map((service) => service.signal)),
+    );
   });
 });

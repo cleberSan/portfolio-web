@@ -1,7 +1,12 @@
 /**
- * Perfil profissional do Cleber, a partir do perfil do LinkedIn que ele enviou.
- * Contato pessoal (endereço, telefone) fica de fora de propósito: o repositório é público.
+ * Perfil profissional do Cleber, a partir do perfil do LinkedIn que ele enviou (conferido em out 2026).
+ * O telefone fica em `site.contact`; endereço e e-mail pessoal ficam de fora de propósito, porque o
+ * repositório é público. O site mostra quem ele é e como trabalha, não é um currículo: nada de
+ * disponibilidade ou busca de vaga aqui (pedido dele em 2026-10-27).
  */
+
+import type { Locale } from "@/i18n/locales";
+import { profileTextEn } from "./profile.en";
 
 /** Mês no formato `AAAA-MM`. */
 export type YearMonth = `${number}-${number}`;
@@ -26,6 +31,21 @@ export type Education = {
   end: YearMonth;
 };
 
+export type Language = { name: string; level: string };
+
+/** Perfil num idioma: as datas e a stack são as mesmas, os textos mudam. */
+export type Profile = {
+  fullName: string;
+  location: string;
+  asOf: YearMonth;
+  careerStart: YearMonth;
+  bio: readonly string[];
+  experiences: readonly Experience[];
+  education: readonly Education[];
+  certifications: readonly string[];
+  languages: readonly Language[];
+};
+
 export const profile = {
   fullName: "Cleber Costa Santos",
   location: "São Paulo, Brasil",
@@ -43,10 +63,11 @@ export const profile = {
       company: "Exactaworks",
       role: "Desenvolvedor Sênior Full-Stack .NET",
       start: "2025-10",
+      end: "2026-10",
       location: "São Paulo",
       segment: "Pagamentos · premiações e benefícios",
       summary:
-        "Time de pagamentos do Familhão, responsável por fluxos financeiros críticos: Pix, cartão de crédito e débito, estornos e assinaturas com renovação recorrente.",
+        "No time de pagamentos do Familhão, cuidei de fluxos financeiros críticos: Pix, cartão de crédito e débito, estornos e assinaturas com renovação recorrente.",
       highlights: [
         "Microsserviços .NET com comunicação assíncrona por Service Bus (filas e tópicos) e RabbitMQ/AMQP na AWS, com vários workers publicando eventos de pagamento e comunicação.",
         "Resiliência em fluxos financeiros: idempotência, tratamento de duplicidade, retry e reconciliação de estados, tratando resposta ambígua de provedor como potencial sucesso em vez de cancelar às cegas.",
@@ -169,20 +190,62 @@ export const profile = {
   ],
 } as const;
 
-const monthNames = [
-  "jan",
-  "fev",
-  "mar",
-  "abr",
-  "mai",
-  "jun",
-  "jul",
-  "ago",
-  "set",
-  "out",
-  "nov",
-  "dez",
-] as const;
+/** Empresas da trajetória; a tradução de cada cargo é indexada por elas. */
+export type Company = (typeof profile.experiences)[number]["company"];
+
+/** Cursos da formação; a tradução de cada um é indexada por eles. */
+export type Course = (typeof profile.education)[number]["course"];
+
+/** O perfil em português ou com os textos em inglês de `profile.en.ts` sobre as mesmas datas. */
+export function getProfile(locale: Locale): Profile {
+  if (locale === "pt-BR") {
+    return profile;
+  }
+
+  const text = profileTextEn;
+  return {
+    ...profile,
+    location: text.location,
+    bio: text.bio,
+    experiences: profile.experiences.map((experience) => ({
+      ...experience,
+      ...text.experiences[experience.company],
+    })),
+    education: profile.education.map((education) => ({
+      ...education,
+      course: text.education[education.course],
+    })),
+    certifications: text.certifications,
+    languages: text.languages,
+  };
+}
+
+const monthNames: Record<Locale, readonly string[]> = {
+  "pt-BR": ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"],
+  en: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
+};
+
+const durationWords: Record<
+  Locale,
+  { year: string; years: string; month: string; months: string; and: string; present: string }
+> = {
+  "pt-BR": {
+    year: "ano",
+    years: "anos",
+    month: "mês",
+    months: "meses",
+    and: "e",
+    present: "atual",
+  },
+  en: {
+    year: "year",
+    years: "years",
+    month: "month",
+    months: "months",
+    and: "and",
+    present: "present",
+  },
+};
 
 function parseYearMonth(value: YearMonth): { year: number; month: number } {
   const [year, month] = value.split("-").map(Number);
@@ -196,30 +259,35 @@ export function monthsBetween(start: YearMonth, end: YearMonth): number {
   return (b.year - a.year) * 12 + (b.month - a.month) + 1;
 }
 
-/** "3 anos e 8 meses", "1 ano", "4 meses". */
-export function formatDuration(months: number): string {
+/** "3 anos e 8 meses", "1 ano", "4 meses"; em inglês, "3 years and 8 months". */
+export function formatDuration(months: number, locale: Locale = "pt-BR"): string {
+  const words = durationWords[locale];
   const years = Math.floor(months / 12);
   const rest = months % 12;
   const parts = [
-    years > 0 ? `${years} ${years === 1 ? "ano" : "anos"}` : undefined,
-    rest > 0 ? `${rest} ${rest === 1 ? "mês" : "meses"}` : undefined,
+    years > 0 ? `${years} ${years === 1 ? words.year : words.years}` : undefined,
+    rest > 0 ? `${rest} ${rest === 1 ? words.month : words.months}` : undefined,
   ].filter(Boolean);
-  return parts.join(" e ");
+  return parts.join(` ${words.and} `);
 }
 
-/** "out 2025". */
-export function formatYearMonth(value: YearMonth): string {
+/** "out 2025"; em inglês, "Oct 2025". */
+export function formatYearMonth(value: YearMonth, locale: Locale = "pt-BR"): string {
   const { year, month } = parseYearMonth(value);
-  return `${monthNames[month - 1]} ${year}`;
+  return `${monthNames[locale][month - 1]} ${year}`;
 }
 
 /** "abr 2025 – set 2025 · 6 meses" ou "out 2025 – atual" no cargo atual. */
-export function formatPeriod(experience: Pick<Experience, "start" | "end">): string {
+export function formatPeriod(
+  experience: Pick<Experience, "start" | "end">,
+  locale: Locale = "pt-BR",
+): string {
+  const start = formatYearMonth(experience.start, locale);
   if (!experience.end) {
-    return `${formatYearMonth(experience.start)} – atual`;
+    return `${start} – ${durationWords[locale].present}`;
   }
   const months = monthsBetween(experience.start, experience.end);
-  return `${formatYearMonth(experience.start)} – ${formatYearMonth(experience.end)} · ${formatDuration(months)}`;
+  return `${start} – ${formatYearMonth(experience.end, locale)} · ${formatDuration(months, locale)}`;
 }
 
 /** Anos completos de carreira até a data em que o perfil foi conferido. */
@@ -227,4 +295,12 @@ export function careerYears(): number {
   return Math.floor((monthsBetween(profile.careerStart, profile.asOf) - 1) / 12);
 }
 
-export const currentExperience = profile.experiences.find((experience) => !experience.end);
+/** "out 2019 – out 2026 · 7 anos e 1 mês": do primeiro cargo até a data em que o perfil foi conferido. */
+export function formatCareerPeriod(locale: Locale = "pt-BR"): string {
+  return formatPeriod({ start: profile.careerStart, end: profile.asOf }, locale);
+}
+
+/** Cargo em andamento; `undefined` quando nenhum cargo do perfil está em aberto. */
+export const currentExperience: Experience | undefined = profile.experiences.find(
+  (experience: Experience) => !experience.end,
+);

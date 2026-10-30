@@ -7,7 +7,7 @@ import { mainContentId, SkipLink } from "./skip-link";
 describe("SkipLink", () => {
   it("aponta para o conteúdo principal", () => {
     // Act
-    render(<SkipLink />);
+    render(<SkipLink locale="pt-BR" />);
 
     // Assert
     expect(screen.getByRole("link", { name: "Pular para o conteúdo" })).toHaveAttribute(
@@ -20,7 +20,7 @@ describe("SkipLink", () => {
 describe("SiteFooter", () => {
   it("aponta para o LinkedIn, o GitHub e o código do site", () => {
     // Act
-    render(<SiteFooter />);
+    render(<SiteFooter locale="pt-BR" />);
 
     // Assert
     expect(screen.getByRole("link", { name: /^LinkedIn/ })).toHaveAttribute(

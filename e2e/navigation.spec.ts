@@ -51,16 +51,47 @@ test("a home leva ao projeto CareFlow", async ({ page }) => {
   await expect(page.getByRole("note")).toContainText("dados sintéticos");
 });
 
-test("a home leva à trajetória completa no Sobre", async ({ page }) => {
+test("o menu leva às seções da home a partir de outra página", async ({ page }) => {
   // Arrange
-  await page.goto("/");
+  await page.goto("/sobre");
+  const nav = page.getByRole("navigation", { name: "Principal" });
 
   // Act
-  await page.getByRole("link", { name: "Ver a trajetória completa" }).click();
+  await nav.getByRole("link", { name: "Cases" }).click();
 
   // Assert
-  await expect(page).toHaveURL(/\/sobre#experiencia$/);
-  await expect(page.getByRole("heading", { level: 2, name: "Experiência" })).toBeInViewport();
+  await expect(page).toHaveURL(/\/#cases$/);
+  await expect(
+    page.getByRole("heading", { level: 2, name: "Problemas reais que resolvi" }),
+  ).toBeInViewport();
+});
+
+test.describe("sem JavaScript", () => {
+  test.use({ javaScriptEnabled: false });
+
+  test("os destaques de cada cargo abrem na home", async ({ page }) => {
+    // Arrange
+    await page.goto("/#trajetoria");
+    const stack = page.getByRole("list", { name: "Stack na Exactaworks" });
+    await expect(stack).toBeHidden();
+
+    // Act
+    await page.getByText("Destaques e stack").first().click();
+
+    // Assert
+    await expect(stack).toBeVisible();
+  });
+});
+
+// O currículo saiu do site em 2026-10-27; quem tiver o link antigo cai no Sobre, que conta a trajetória.
+test("o endereço antigo do currículo leva ao Sobre", async ({ page }) => {
+  // Act
+  const response = await page.goto("/curriculo");
+
+  // Assert
+  await expect(page).toHaveURL(/\/sobre$/);
+  expect(response?.status()).toBe(200);
+  await expect(page.getByRole("heading", { level: 1, name: "Sobre" })).toBeVisible();
 });
 
 test("a página do CareFlow leva à demonstração", async ({ page }) => {
@@ -73,6 +104,32 @@ test("a página do CareFlow leva à demonstração", async ({ page }) => {
   // Assert
   await expect(page).toHaveURL(/\/projetos\/careflow\/painel$/);
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+});
+
+test("o vídeo do fluxo carrega da própria origem, sem esbarrar na CSP", async ({ page }) => {
+  // Arrange
+  const blocked: string[] = [];
+  page.on("console", (message) => {
+    if (/Content Security Policy/i.test(message.text())) blocked.push(message.text());
+  });
+  await page.goto("/projetos/careflow");
+  const video = page.locator("#video ~ div video");
+  await expect(video).toBeVisible();
+
+  // Act
+  await video.evaluate((element: HTMLVideoElement) => {
+    element.preload = "metadata";
+    element.load();
+  });
+
+  // Assert
+  await expect
+    .poll(() => video.evaluate((element: HTMLVideoElement) => element.readyState))
+    .toBeGreaterThanOrEqual(1);
+  const seconds = await video.evaluate((element: HTMLVideoElement) => element.duration);
+  expect(seconds).toBeGreaterThan(50);
+  expect(await video.evaluate((element: HTMLVideoElement) => element.paused)).toBe(true);
+  expect(blocked).toEqual([]);
 });
 
 test("links externos abrem em nova aba sem window.opener", async ({ page }) => {

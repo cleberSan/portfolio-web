@@ -45,6 +45,24 @@
   }
 }
 
+/* Impressão: papel branco e tinta preta, em qualquer tema do sistema. */
+@media print {
+  :root {
+    --background: #ffffff;
+    --foreground: #000000;
+    --muted: #333333;
+    --accent: #000000;
+    --border: #bbbbbb;
+    --surface: #ffffff;
+    --ok: #000000;
+    color-scheme: light;
+  }
+}
+
+@page {
+  margin: 14mm;
+}
+
 body {
   background: var(--background);
   color: var(--foreground);

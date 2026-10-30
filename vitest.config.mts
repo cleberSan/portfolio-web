@@ -14,12 +14,19 @@ export default defineConfig({
       include: ["src/**/*.{ts,tsx}"],
       exclude: [
         "src/**/*.test.{ts,tsx}",
-        // Depende de next/font, que só existe no build do Next.js.
-        "src/app/layout.tsx",
+        // Ajudantes usados só pelos testes.
+        "src/test-utils/**",
+        // Dependem de next/font, que só existe no build do Next.js. Os layouts raiz e a 404
+        // global montam o documento inteiro (<html>); são cobertos pelos testes E2E.
+        "src/app/**/layout.tsx",
+        "src/app/global-not-found.tsx",
+        "src/components/root-document.tsx",
         // Componente assíncrono com import dinâmico de MDX e rotas de imagem do next/og:
         // cobertos pelos testes E2E (ver ADR-0001).
-        "src/app/diario/[[]slug]/page.tsx",
+        "src/app/**/diario/[[]slug]/page.tsx",
         "src/app/**/opengraph-image.tsx",
+        "src/app/**/opengraph-image/route.tsx",
+        "src/lib/site-og-image.tsx",
       ],
       reporter: ["text", "lcov", "cobertura"],
       thresholds: { lines: 80, branches: 80, functions: 80, statements: 80 },

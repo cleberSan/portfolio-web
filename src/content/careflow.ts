@@ -70,6 +70,55 @@ export const careflow = {
   },
 } as const;
 
+/**
+ * Vídeo de um minuto com o caminho de uma paciente: a tela dela à esquerda e os serviços à direita.
+ * Não tem áudio; a lista de cenas é a alternativa em texto. Os valores técnicos vêm da gravação do
+ * CI que o Painel reproduz, e a tela do celular é ilustrativa (o CareFlow não tem app de paciente).
+ */
+export const careflowVideo = {
+  /** VP9 primeiro (menor, toca em navegadores sem H.264, como o Chromium dos testes); MP4 H.264 para o resto. */
+  sources: [
+    { src: "/videos/careflow-fluxo.webm", type: "video/webm" },
+    { src: "/videos/careflow-fluxo.mp4", type: "video/mp4" },
+  ],
+  download: "/videos/careflow-fluxo.mp4",
+  poster: "/videos/careflow-fluxo-capa.webp",
+  width: 1080,
+  height: 1350,
+  sizeLabel: "MP4, 3,4 MB",
+  scenes: [
+    {
+      title: "Cadastro e consentimento",
+      description:
+        "A paciente escolhe para que autoriza o uso dos dados. O cofre cifra o cadastro por campo e os outros serviços recebem só um pseudônimo.",
+    },
+    {
+      title: "Triagem com IA",
+      description:
+        "Ela conta o que sente. O texto é mascarado antes de ir ao modelo, passa pelos guardrails e um profissional confirma a prioridade.",
+    },
+    {
+      title: "Agenda sem dupla reserva",
+      description:
+        "Dois pedidos para o mesmo horário: o banco garante que só um vence, e o trace mostra a reserva passando pelos serviços.",
+    },
+    {
+      title: "Notificação com fallback",
+      description: "O WhatsApp cai, o circuito abre e o SMS entrega a confirmação.",
+    },
+    {
+      title: "Revogação do consentimento",
+      description:
+        "As consultas futuras são canceladas por evento, sem intervenção, e a cadeia da auditoria continua íntegra.",
+    },
+    {
+      title: "Direitos do titular",
+      description:
+        "Ela pede a eliminação dos dados, seis serviços confirmam e o cofre passa a responder que o cadastro não existe mais.",
+    },
+  ],
+} as const;
+
 export const careflowPhases: readonly Phase[] = [
   {
     number: 0,
