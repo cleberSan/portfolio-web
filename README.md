@@ -41,7 +41,7 @@ Hospedado na Vercel: merge no `main` publica em produção e cada PR ganha um pr
 
 ## Decisões
 
-As decisões arquiteturais estão em [docs/adr](docs/adr).
+As decisões arquiteturais estão em [docs/adr](docs/adr). Mudança que não é trivial começa por uma spec em [docs/specs](docs/specs), revisada antes do código ([ADR-0008](docs/adr/0008-especificar-antes-de-implementar.md)).
 
 ## Rodando localmente
 
