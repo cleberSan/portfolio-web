@@ -1,6 +1,6 @@
 # ADR-0008: Especificar antes de implementar (Spec-Driven Development)
 
-- Status: proposto
+- Status: aceito
 - Data: 2026-11-04
 
 ## Contexto
@@ -12,7 +12,7 @@ Em 2026-11-04 Cleber decidiu adotar Spec-Driven Development em todos os reposit�
 ## Decisão
 
 - **Specs em `docs/specs/NNNN-titulo/`**, ao lado dos ADRs: `spec.md` (o quê e por quê), `plano.md` (como) e `tarefas.md` (em que ordem), conforme [docs/specs/README.md](../specs/README.md).
-- **Nível completo, com a spec aprovada por Cleber antes do código,** quando a mudança cria página, rota ou redirecionamento; mexe em CSP, cabeçalhos ou `NEXT_PUBLIC_*`; exibe ou coleta dado pessoal; acrescenta idioma ou página traduzida; envolve o Painel ou o careflow (a spec mora no careflow); ou traz dependência, serviço, custo ou licença novos.
+- **Nível completo, com a spec aprovada por Cleber antes do código** (decisão de Cleber em 2026-11-04: o portão vale só neste nível), quando a mudança cria página, rota ou redirecionamento; mexe em CSP, cabeçalhos ou `NEXT_PUBLIC_*`; exibe ou coleta dado pessoal; acrescenta idioma ou página traduzida; envolve o Painel ou o careflow (a spec mora no careflow); ou traz dependência, serviço, custo ou licença novos.
 - **Nível leve** (só `spec.md`) para seção, componente ou comportamento novo numa página existente; **direto** (só o PR) para post do diário, texto do perfil vindo do LinkedIn, atualização de dependência (ADR-0007), documentação, refatoração e bug com causa clara.
 - **Critérios de aceite `CA-NN`** em EARS, com acessibilidade (WCAG 2.2 AA nos dois temas) como requisito não funcional de toda tela; o teste Vitest ou Playwright que prova cada critério leva o comentário `// spec NNNN CA-NN`.
 - **Spec por mudança:** depois de `implementada`, só o status muda; comportamento novo ganha spec nova.
