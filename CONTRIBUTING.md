@@ -1,9 +1,10 @@
 # Como contribuir
 
 1. Crie uma branch a partir de `main` (`feat/...`, `fix/...`, `chore/...`, `docs/...`).
-2. Use [Conventional Commits](https://www.conventionalcommits.org/pt-br/).
-3. Abra um PR com o template; o CI precisa estar verde.
-4. Decisões arquiteturais entram como ADR em `docs/adr/`.
+2. Mudança que não é trivial começa por uma spec em `docs/specs/` ([quando e como](docs/specs/README.md), ADR-0008). No nível completo (página ou rota nova, CSP, dado pessoal, idioma), o código só vem depois de a spec ser aprovada.
+3. Use [Conventional Commits](https://www.conventionalcommits.org/pt-br/).
+4. Abra um PR com o template, com o link para a spec; o CI precisa estar verde.
+5. Decisões arquiteturais entram como ADR em `docs/adr/`.
 
 ## Rodando localmente
 
