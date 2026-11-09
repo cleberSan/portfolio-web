@@ -105,3 +105,20 @@ export type Reproducao = {
   duracaoMs: number;
   eventos: readonly EventoReproducao[];
 };
+
+export type Fonte = { rotulo: string; href: string };
+
+/** Resposta do Sinapse, escrita antes e revisada no PR (ADR-0009). */
+export type RespostaGravada = {
+  id: string;
+  /** Pergunta que aparece como sugestão e como título na lista sem JavaScript. */
+  pergunta: string;
+  /** Palavras-chave da busca local, com peso de 1 a 3. */
+  chaves: Readonly<Record<string, number>>;
+  texto: string;
+  /** Região que a cena destaca quando a resposta aparece. */
+  regiao: RegiaoId | null;
+  /** Reprodução que a cena toca junto com a resposta. */
+  reproducao: ReproducaoId | null;
+  fontes: readonly Fonte[];
+};
