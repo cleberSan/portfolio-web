@@ -5,7 +5,7 @@ Spec: [spec.md](spec.md) · Plano: [plano.md](plano.md)
 Em ordem de execução; cada tarefa cabe num commit e deixa o build verde. Teste junto ou antes do código.
 
 - [x] **T01** `three` na lista de revisão manual do Dependabot (o ADR-0009 entrou junto com a decisão dos cards) — arquivos: `.github/workflows/dependabot-auto-merge.yml` — prova: `npm run format:check` — cobre: decisões
-- [ ] **T02** Regiões e linha do tempo compacta das reproduções, só no servidor — arquivos: `src/content/ecossistema/regioes.ts`, `reproducoes.ts` e testes — prova: `npm test` — cobre: CA-03, CA-06
+- [x] **T02** Regiões e linha do tempo compacta das reproduções, só no servidor — arquivos: `src/content/ecossistema/regioes.ts`, `reproducoes.ts` e testes — prova: `npm test` — cobre: CA-03, CA-06
 - [ ] **T03** Busca local e respostas gravadas do assistente — arquivos: `src/lib/assistente/buscar.ts`, `src/content/ecossistema/assistente.ts` e testes — prova: `npm test` — cobre: CA-12, CA-13, CA-16
 - [ ] **T04** Rota estática `/ecossistema` com conteúdo completo sem JS, metadados, imagem Open Graph, `staticRoutes`, links na home (PT e EN) e em `/projetos`, tokens do monitor — arquivos: `src/app/(pt)/ecossistema/`, `src/config/site.ts`, `src/components/home/`, `src/app/(pt)/projetos/page.tsx`, `src/app/globals.css` — prova: `npm test`, E2E sem JS — cobre: CA-01, CA-02, CA-03
 - [ ] **T05** Experiência de cliente sem 3D: modos, seleção de região, cartões, registro, Pausar/Retomar, movimento reduzido e mapa 2D — arquivos: `src/components/ecossistema/experiencia.tsx`, `mapa-2d.tsx`, `registro.tsx`, `src/lib/capacidades.ts` e testes — prova: `npm test`, E2E — cobre: CA-05, CA-06, CA-07, CA-08, CA-09
