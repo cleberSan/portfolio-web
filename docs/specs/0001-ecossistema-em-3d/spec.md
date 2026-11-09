@@ -73,7 +73,9 @@ Uma página `/ecossistema` com um mapa 3D em forma de cérebro em que cada regi�
 
 ## Perguntas abertas
 
-- [A DECIDIR] Como o assistente responde. Opções: A (recomendada) respostas gravadas e revisadas no PR, com busca local no navegador; B Claude ao vivo por uma rota do servidor, com chave, limite de gasto e controle de abuso; C sem assistente.
-- [A DECIDIR] Biblioteca da cena 3D. Opções: A (recomendada) three.js, MIT, carregada só nesta rota; B WebGL escrito à mão, sem dependência; C React Three Fiber com drei, que hoje só aceita React abaixo de 19.4.
-- [A DECIDIR] Voz. Opções: A (recomendada) só leitura em voz alta, opcional e desligada no início; B leitura e microfone, o que muda o Permissions-Policy e, no Chrome, manda o áudio do visitante para servidores do Google; C sem voz.
+Decididas pelo Cleber em 2026-11-09, nos cards da thread, todas pela opção recomendada; registro no [ADR-0009](../../adr/0009-ecossistema-3d-com-three-e-respostas-gravadas.md).
+
+- Como o assistente responde: **respostas gravadas** e revisadas no PR, com busca local no navegador. Descartados: Claude ao vivo por uma rota do servidor (chave, custo, abuso) e ficar sem assistente.
+- Biblioteca da cena 3D: **three.js**, MIT, carregada só nesta rota. Descartados: WebGL escrito à mão e React Three Fiber com drei (aceita só React abaixo de 19.4).
+- Voz: **só leitura em voz alta**, opcional e desligada no início, sem microfone. Descartados: microfone (muda o Permissions-Policy e, no Chrome, manda o áudio do visitante ao Google) e ficar sem voz.
 - Nome do assistente e da rota: Sinapse e `/ecossistema`, salvo outra preferência do Cleber na revisão.

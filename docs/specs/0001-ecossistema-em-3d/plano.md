@@ -3,7 +3,7 @@
 - Spec: [spec.md](spec.md)
 - Data: 2026-11-09
 
-Este plano assume as opções recomendadas das perguntas abertas (respostas gravadas, three.js, só leitura em voz alta). Se o Cleber escolher outra, a spec muda primeiro e este plano depois.
+As três perguntas abertas da spec foram decididas pelo Cleber em 2026-11-09 com as opções que este plano já assumia: respostas gravadas, three.js e só leitura em voz alta ([ADR-0009](../../adr/0009-ecossistema-3d-com-three-e-respostas-gravadas.md)).
 
 ## Contexto técnico
 
@@ -151,4 +151,4 @@ Rollback: reverter o PR (a rota é isolada e não muda cabeçalho, variável nem
 
 ## Decisões
 
-ADR-0009 novo (skill `novo-adr`) depois dos cards: cena 3D com three.js carregado só na rota, assistente de respostas gravadas sem modelo ao vivo, voz só de leitura e sem microfone, painel sempre escuro. Segue o ADR-0003 (nenhuma mudança de CSP) e o ADR-0006 (página só em português).
+[ADR-0009](../../adr/0009-ecossistema-3d-com-three-e-respostas-gravadas.md), aceito com as escolhas dos cards de 2026-11-09: cena 3D com three.js carregado só na rota, assistente de respostas gravadas sem modelo ao vivo, voz só de leitura e sem microfone, painel sempre escuro. Segue o ADR-0003 (nenhuma mudança de CSP) e o ADR-0006 (página só em português).
