@@ -289,6 +289,68 @@ test.describe("Ecossistema em 3D", () => {
     });
   });
 
-  // spec 0001 CA-20
-  test.fixme("toda requisição da página é da própria origem", () => {});
+  test.describe("com a cena 3D e tudo em uso", () => {
+    test.use({ reducedMotion: "no-preference" });
+
+    // spec 0001 CA-20
+    test("toda requisição da página é da própria origem", async ({ page, baseURL }) => {
+      // Arrange
+      const externas: string[] = [];
+      page.on("request", (requisicao) => {
+        const url = new URL(requisicao.url());
+        if (/^https?:$/.test(url.protocol) && url.origin !== new URL(baseURL ?? "").origin) {
+          externas.push(requisicao.url());
+        }
+      });
+
+      // Act: cena 3D, região, reprodução e pergunta.
+      await page.goto("/ecossistema");
+      const mapa = page.getByRole("region", { name: "Mapa do ecossistema" });
+      await expect(mapa.getByTestId("palco-3d").locator("canvas")).toBeVisible();
+      await mapa.getByRole("button", { name: "Lojinha Da Lua", exact: true }).click();
+      await mapa.getByRole("button", { name: "Triagem com IA" }).click();
+      await page.getByLabel("Sua pergunta").fill("Os sinais do mapa são reais?");
+      await page.getByRole("button", { name: "Perguntar" }).click();
+      await expect(page.getByTestId("anuncio")).not.toBeEmpty();
+      await page.waitForLoadState("networkidle");
+
+      // Assert
+      expect(externas).toEqual([]);
+    });
+  });
+
+  // Acessibilidade: o foco fica visível no monitor escuro, nos dois temas.
+  for (const colorScheme of ["light", "dark"] as const) {
+    test(`no tema ${colorScheme === "light" ? "claro" : "escuro"}, o foco por teclado aparece no mapa`, async ({
+      page,
+    }) => {
+      // Arrange
+      await page.emulateMedia({ colorScheme });
+      await page.goto("/ecossistema");
+      const mapa = page.getByRole("region", { name: "Mapa do ecossistema" });
+      await expect(mapa).not.toHaveAttribute("data-modo", "estatico");
+      await mapa.getByRole("button", { name: "Reserva de consulta" }).focus();
+
+      // Act
+      await page.keyboard.press("Tab");
+
+      // Assert
+      const proximo = mapa.getByRole("button", { name: "Revogação do consentimento" });
+      await expect(proximo).toBeFocused();
+      const foco = await proximo.evaluate((botao) => {
+        const estilo = getComputedStyle(botao);
+        return {
+          visivel: botao.matches(":focus-visible"),
+          estilo: estilo.outlineStyle,
+          largura: Number.parseFloat(estilo.outlineWidth),
+          cor: estilo.outlineColor,
+        };
+      });
+      expect(foco.visivel).toBe(true);
+      expect(foco.estilo).not.toBe("none");
+      expect(foco.largura).toBeGreaterThanOrEqual(2);
+      // --monitor-fg, claro sobre o fundo escuro do monitor.
+      expect(foco.cor).toBe("rgb(219, 230, 243)");
+    });
+  }
 });
