@@ -3,7 +3,7 @@
 - Status: rascunho
 - Data: 2026-11-09
 - Nível: completo (rota nova, dependência nova, voz no navegador)
-- PRs: portfolio-web (este rascunho)
+- PRs: portfolio-web#38
 - Relacionados: [ADR-0001](../../adr/0001-stack-e-qualidade.md) (portões de qualidade), [ADR-0003](../../adr/0003-csp-sem-nonce.md) (CSP sem nonce), [ADR-0006](../../adr/0006-versao-em-ingles.md) (idiomas), [ADR-0007](../../adr/0007-dependabot-com-auto-merge.md) (Dependabot), [ADR-0008](../../adr/0008-especificar-antes-de-implementar.md) (SDD), visual "Sala de controle" (#19), Painel do CareFlow ([ADR-0010 do careflow](https://github.com/cleberSan/careflow/blob/main/docs/adr/0010-observabilidade-e-painel-de-privacidade.md))
 
 ## Problema
