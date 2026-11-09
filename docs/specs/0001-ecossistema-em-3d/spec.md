@@ -1,6 +1,6 @@
 # Spec 0001: Ecossistema em 3D com assistente de respostas gravadas
 
-- Status: rascunho
+- Status: aprovada (2026-11-09, OK do Cleber no card da thread)
 - Data: 2026-11-09
 - Nível: completo (rota nova, dependência nova, voz no navegador)
 - PRs: portfolio-web#38
