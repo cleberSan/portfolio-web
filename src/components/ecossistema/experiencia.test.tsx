@@ -1,7 +1,12 @@
 import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { renderToString } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { EventoReproducao, NoId, Reproducao } from "@/content/ecossistema/modelo";
+import type {
+  EventoReproducao,
+  NoId,
+  Reproducao,
+  RespostaGravada,
+} from "@/content/ecossistema/modelo";
 import { regioes } from "@/content/ecossistema/regioes";
 import type { Cena, CarregarCena, OpcoesDaCena } from "./cena/tipos";
 import { Experiencia } from "./experiencia";
@@ -76,6 +81,27 @@ const reproducoes: Reproducao[] = [
   },
 ];
 
+const respostas: RespostaGravada[] = [
+  {
+    id: "agentes",
+    pergunta: "Como os agentes trabalham?",
+    chaves: { agentes: 3 },
+    texto: "Cada fase passa por agentes com um papel só.",
+    regiao: "agentes",
+    reproducao: "agentes",
+    fontes: [{ rotulo: "Fluxo", href: "https://github.com/cleberSan/claude-works" }],
+  },
+  {
+    id: "custo",
+    pergunta: "Quanto custa?",
+    chaves: { custo: 3 },
+    texto: "Nada.",
+    regiao: null,
+    reproducao: null,
+    fontes: [{ rotulo: "ADR", href: "https://github.com/cleberSan/portfolio-web" }],
+  },
+];
+
 function cenaFalsa() {
   const cena: Cena = {
     destacar: vi.fn(),
@@ -94,7 +120,13 @@ function cenaFalsa() {
 
 function montar(carregarCena?: CarregarCena) {
   return render(
-    <Experiencia regioes={regioes} reproducoes={reproducoes} carregarCena={carregarCena} />,
+    <Experiencia
+      regioes={regioes}
+      reproducoes={reproducoes}
+      respostas={respostas}
+      sugestoes={["agentes", "custo"]}
+      carregarCena={carregarCena}
+    />,
   );
 }
 
@@ -140,7 +172,14 @@ describe("experiência do ecossistema", () => {
   // spec 0001 CA-01
   it("no HTML do servidor, mostra o mapa parado e manda para o texto", () => {
     // Act
-    const html = renderToString(<Experiencia regioes={regioes} reproducoes={reproducoes} />);
+    const html = renderToString(
+      <Experiencia
+        regioes={regioes}
+        reproducoes={reproducoes}
+        respostas={respostas}
+        sugestoes={["agentes"]}
+      />,
+    );
 
     // Assert
     expect(html).toContain('data-modo="estatico"');
@@ -259,6 +298,35 @@ describe("experiência do ecossistema", () => {
     );
     fireEvent.click(screen.getByRole("button", { name: "Repetir" }));
     expect(registro()).toHaveTextContent("Nenhum passo ainda.");
+  });
+
+  // spec 0001 CA-12
+  it("a resposta do Sinapse destaca a região dela e toca a reprodução relacionada", () => {
+    // Arrange
+    montar();
+
+    // Act
+    fireEvent.click(screen.getByRole("button", { name: "Como os agentes trabalham?" }));
+
+    // Assert
+    expect(screen.getByRole("button", { name: "Agentes" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "Uma fase com agentes" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    expect(screen.getByRole("article", { name: "Agentes" })).toBeInTheDocument();
+  });
+
+  it("resposta sem região nem reprodução não mexe no mapa", () => {
+    montar();
+
+    fireEvent.click(screen.getByRole("button", { name: "Quanto custa?" }));
+
+    expect(screen.queryByRole("article")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Reserva de consulta" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
   });
 
   // spec 0001 CA-07

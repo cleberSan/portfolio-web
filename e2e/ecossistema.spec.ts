@@ -1,3 +1,4 @@
+import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "./fixtures";
 
 // Esqueleto da spec 0001 (docs/specs/0001-ecossistema-em-3d): cada teste ganha corpo na tarefa que
@@ -63,6 +64,73 @@ test.describe("Ecossistema em 3D", () => {
     await expect(cartao).toBeVisible();
     await expect(cartao.getByRole("link", { name: /^Fluxo de uma fase/ })).toBeVisible();
   });
+
+  // spec 0001 CA-12, CA-14, CA-17
+  test("enviar uma pergunta responde sem requisição nem gravação no navegador", async ({
+    page,
+  }) => {
+    // Arrange
+    await page.goto("/ecossistema");
+    const mapa = page.getByRole("region", { name: "Mapa do ecossistema" });
+    await expect(mapa).not.toHaveAttribute("data-modo", "estatico");
+    const campo = mapa.getByLabel("Sua pergunta");
+    await campo.scrollIntoViewIfNeeded();
+    await page.waitForLoadState("networkidle");
+    const requisicoes: string[] = [];
+    page.on("request", (requisicao) => requisicoes.push(requisicao.url()));
+    await page.evaluate(() => {
+      const janela = window as unknown as { __gravacoes: number };
+      janela.__gravacoes = 0;
+      const original = Storage.prototype.setItem;
+      Storage.prototype.setItem = function (this: Storage, chave: string, valor: string) {
+        janela.__gravacoes += 1;
+        return original.call(this, chave, valor);
+      };
+    });
+
+    // Act
+    await campo.fill("Como vocês seguem a LGPD?");
+    await campo.press("Enter");
+
+    // Assert
+    await expect(mapa.getByTestId("anuncio")).toContainText("cofre do paciente");
+    await expect(
+      mapa.getByTestId("resposta").getByRole("link", { name: /ADR-0004/ }),
+    ).toBeVisible();
+    await expect(mapa.getByRole("button", { name: "CareFlow", exact: true })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    expect(requisicoes).toEqual([]);
+    expect(
+      await page.evaluate(() => (window as unknown as { __gravacoes: number }).__gravacoes),
+    ).toBe(0);
+    expect(page.url()).not.toContain("?");
+  });
+
+  for (const colorScheme of ["light", "dark"] as const) {
+    test(`com cartão e resposta abertos, segue WCAG 2.2 AA no tema ${colorScheme}`, async ({
+      page,
+    }) => {
+      // Arrange
+      await page.emulateMedia({ colorScheme, reducedMotion: "reduce" });
+      await page.goto("/ecossistema");
+      const mapa = page.getByRole("region", { name: "Mapa do ecossistema" });
+      await mapa.getByRole("button", { name: "Lojinha Da Lua", exact: true }).click();
+      await mapa.getByRole("button", { name: "O que é o CareFlow?" }).click();
+      await mapa.getByRole("button", { name: "Próximo passo" }).click();
+      await expect(mapa.getByTestId("anuncio")).toContainText("projeto vitrine");
+
+      // Act
+      const resultado = await new AxeBuilder({ page })
+        .include('[data-modo="2d"]')
+        .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
+        .analyze();
+
+      // Assert
+      expect(resultado.violations).toEqual([]);
+    });
+  }
 
   test.describe("com movimento reduzido", () => {
     test.use({ reducedMotion: "reduce" });

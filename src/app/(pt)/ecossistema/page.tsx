@@ -7,7 +7,12 @@ import { ExternalLink } from "@/components/external-link";
 import { PageHeader } from "@/components/page-header";
 import { SmartLink } from "@/components/smart-link";
 import { TagList } from "@/components/tag-list";
-import { buildRespostas, nomeDoAssistente, saudacao } from "@/content/ecossistema/assistente";
+import {
+  buildRespostas,
+  nomeDoAssistente,
+  saudacao,
+  sugestoes,
+} from "@/content/ecossistema/assistente";
 import { regioes } from "@/content/ecossistema/regioes";
 import { buildReproducoes, resumoDaGravacao } from "@/content/ecossistema/reproducoes";
 import { pageMetadata } from "@/lib/metadata";
@@ -64,7 +69,12 @@ export default function EcossistemaPage() {
         </p>
       </div>
 
-      <Experiencia regioes={regioes} reproducoes={reproducoes} />
+      <Experiencia
+        regioes={regioes}
+        reproducoes={reproducoes}
+        respostas={respostas}
+        sugestoes={sugestoes}
+      />
 
       <section aria-labelledby="regioes" className="space-y-6">
         <h2 id="regioes" className="text-2xl font-semibold tracking-tight">

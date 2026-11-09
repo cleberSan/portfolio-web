@@ -1,9 +1,13 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
-import { ExternalLink } from "@/components/external-link";
-import { SmartLink } from "@/components/smart-link";
-import type { Regiao, RegiaoId, Reproducao, ReproducaoId } from "@/content/ecossistema/modelo";
+import type {
+  Regiao,
+  RegiaoId,
+  Reproducao,
+  ReproducaoId,
+  RespostaGravada,
+} from "@/content/ecossistema/modelo";
 import {
   decidirModo,
   observarMenosMovimento,
@@ -11,10 +15,12 @@ import {
   webglDisponivel,
   type Modo,
 } from "@/lib/capacidades";
+import { AssistenteUi } from "./assistente-ui";
 import type { CarregarCena, Cena } from "./cena/tipos";
 import { fundoDaRegiao, textoDaRegiao } from "./cores";
 import { fimDaReproducao, passosAte } from "./linha-do-tempo";
 import { Mapa2D } from "./mapa-2d";
+import { LinkDoMonitor } from "./link-do-monitor";
 import { Registro } from "./registro";
 
 /** A cena 3D chega na tarefa T07 da spec 0001; até lá, quem tem WebGL também vê o mapa 2D. */
@@ -47,8 +53,6 @@ const maiorQuadroMs = 100;
 const botao =
   "border-monitor-border hover:border-monitor-fg aria-pressed:bg-monitor-fg aria-pressed:text-monitor aria-pressed:border-monitor-fg rounded-md border px-3 py-1.5 text-sm disabled:opacity-60";
 
-const linkDoMonitor = "underline underline-offset-4 hover:text-monitor-fg";
-
 function CartaoDaRegiao({ regiao }: { regiao: Regiao }) {
   return (
     <article aria-labelledby="cartao-da-regiao-nome" className="space-y-2">
@@ -65,9 +69,7 @@ function CartaoDaRegiao({ regiao }: { regiao: Regiao }) {
       <ul className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
         {regiao.links.map((link) => (
           <li key={link.href}>
-            <SmartLink href={link.href} className={linkDoMonitor}>
-              {link.rotulo}
-            </SmartLink>
+            <LinkDoMonitor href={link.href}>{link.rotulo}</LinkDoMonitor>
           </li>
         ))}
       </ul>
@@ -79,6 +81,9 @@ type ExperienciaProps = {
   regioes: readonly Regiao[];
   /** Ao menos uma reprodução; a primeira toca ao abrir a página quando o movimento é permitido. */
   reproducoes: readonly Reproducao[];
+  /** Respostas gravadas do Sinapse e os ids das que viram perguntas sugeridas. */
+  respostas: readonly RespostaGravada[];
+  sugestoes: readonly string[];
   /** Carga da cena 3D; os testes trocam por uma cena falsa. */
   carregarCena?: CarregarCena;
 };
@@ -91,6 +96,8 @@ type ExperienciaProps = {
 export function Experiencia({
   regioes,
   reproducoes,
+  respostas,
+  sugestoes,
   carregarCena = carregarCenaPadrao,
 }: ExperienciaProps) {
   const hidratado = useHidratado();
@@ -208,6 +215,16 @@ export function Experiencia({
     iniciar(id);
   };
 
+  // A resposta do Sinapse mostra no mapa a região de que fala e toca a reprodução dela.
+  const responder = (resposta: RespostaGravada) => {
+    if (resposta.regiao) {
+      setRegiaoAtiva(resposta.regiao);
+    }
+    if (resposta.reproducao) {
+      escolherReproducao(resposta.reproducao);
+    }
+  };
+
   const proximoPasso = () => {
     const proximo = Math.min(passos + 1, total);
     tempo.current = reproducao.eventos[proximo - 1]?.inicioMs ?? 0;
@@ -315,9 +332,9 @@ export function Experiencia({
               <p className="text-monitor-muted text-sm leading-relaxed">
                 {reproducao.descricao} Origem:{" "}
                 {reproducao.fonte.href ? (
-                  <ExternalLink href={reproducao.fonte.href} className={linkDoMonitor}>
+                  <LinkDoMonitor href={reproducao.fonte.href}>
                     {reproducao.fonte.rotulo}
-                  </ExternalLink>
+                  </LinkDoMonitor>
                 ) : (
                   reproducao.fonte.rotulo
                 )}
@@ -401,6 +418,16 @@ export function Experiencia({
             <Registro reproducao={reproducao} passos={passos} />
           </div>
         </div>
+      )}
+
+      {modo === "estatico" ? null : (
+        <AssistenteUi
+          respostas={respostas}
+          sugestoes={sugestoes}
+          pausado={pausado}
+          animado={animado}
+          aoResponder={responder}
+        />
       )}
     </section>
   );
