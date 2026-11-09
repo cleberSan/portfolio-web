@@ -1,14 +1,31 @@
 import { render, screen, within } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import sitemap from "@/app/sitemap";
 import { buildRespostas } from "@/content/ecossistema/assistente";
 import { regioes } from "@/content/ecossistema/regioes";
 import { buildReproducoes, resumoDaGravacao } from "@/content/ecossistema/reproducoes";
 import EcossistemaPage, { metadata } from "./page";
 
+// O jsdom não tem canvas: a página é testada com o mapa 2D.
+vi.mock("@/lib/capacidades", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/capacidades")>()),
+  webglDisponivel: () => false,
+}));
+
 const respostas = buildRespostas({ gravacao: resumoDaGravacao() });
 
 describe("EcossistemaPage", () => {
+  // spec 0001 CA-05
+  it("abre o mapa interativo antes do texto", () => {
+    // Act
+    render(<EcossistemaPage />);
+
+    // Assert
+    const mapa = screen.getByRole("region", { name: "Mapa do ecossistema" });
+    expect(mapa).toHaveAttribute("data-modo", "2d");
+    expect(within(mapa).getAllByRole("button", { pressed: false }).length).toBeGreaterThan(5);
+  });
+
   it("tem um único h1 e URL canônica própria", () => {
     // Act
     render(<EcossistemaPage />);

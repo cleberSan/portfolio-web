@@ -46,13 +46,83 @@ test.describe("Ecossistema em 3D", () => {
   test.fixme("com WebGL e movimento permitido, carrega a cena e anima", () => {});
 
   // spec 0001 CA-05
-  test.fixme("por teclado, escolhe uma região e abre o cartão dela", () => {});
+  test("por teclado, escolhe uma região e abre o cartão dela", async ({ page }) => {
+    // Arrange
+    await page.goto("/ecossistema");
+    const mapa = page.getByRole("region", { name: "Mapa do ecossistema" });
+    await expect(mapa).not.toHaveAttribute("data-modo", "estatico");
+    const agentes = mapa.getByRole("button", { name: "Agentes", exact: true });
 
-  // spec 0001 CA-08
-  test.fixme("com movimento reduzido, nada anima e a reprodução anda passo a passo", () => {});
+    // Act
+    await agentes.focus();
+    await page.keyboard.press("Enter");
 
-  // spec 0001 CA-09
-  test.fixme("sem WebGL, mostra o mapa 2D sem erro no console", () => {});
+    // Assert
+    await expect(agentes).toHaveAttribute("aria-pressed", "true");
+    const cartao = mapa.getByRole("article", { name: "Agentes", exact: true });
+    await expect(cartao).toBeVisible();
+    await expect(cartao.getByRole("link", { name: /^Fluxo de uma fase/ })).toBeVisible();
+  });
+
+  test.describe("com movimento reduzido", () => {
+    test.use({ reducedMotion: "reduce" });
+
+    // spec 0001 CA-08
+    test("nada anima e a reprodução anda passo a passo", async ({ page }) => {
+      // Arrange
+      await page.goto("/ecossistema");
+      const mapa = page.getByRole("region", { name: "Mapa do ecossistema" });
+      await expect(mapa).toHaveAttribute("data-modo", "2d");
+
+      // Act: nada anda sozinho.
+      await page.waitForTimeout(1500);
+
+      // Assert
+      await expect(mapa).toHaveAttribute("data-estado", "pausado");
+      await expect(mapa.getByRole("button", { name: "Pausar" })).toHaveCount(0);
+      await expect(mapa.getByTestId("situacao")).toHaveText(/^Passo 0 de \d+$/);
+
+      // Act
+      await mapa.getByRole("button", { name: "Próximo passo" }).click();
+
+      // Assert
+      await expect(mapa.getByTestId("situacao")).toHaveText(/^Passo 1 de \d+$/);
+      await expect(mapa.getByRole("list", { name: /^Registro/ })).toContainText(
+        "Demo (BFF do Painel)",
+      );
+    });
+  });
+
+  test.describe("sem WebGL", () => {
+    test.beforeEach(async ({ page }) => {
+      await page.addInitScript(() => {
+        const original = HTMLCanvasElement.prototype.getContext;
+        HTMLCanvasElement.prototype.getContext = function (
+          this: HTMLCanvasElement,
+          tipo: string,
+          ...resto: unknown[]
+        ) {
+          return /webgl/.test(tipo)
+            ? null
+            : (original as (...args: unknown[]) => unknown).call(this, tipo, ...resto);
+        } as typeof original;
+      });
+    });
+
+    // spec 0001 CA-09
+    test("mostra o mapa 2D sem erro no console", async ({ page }) => {
+      // Act
+      await page.goto("/ecossistema");
+
+      // Assert (o fixture falha o teste se houver erro de console)
+      const mapa = page.getByRole("region", { name: "Mapa do ecossistema" });
+      await expect(mapa).toHaveAttribute("data-modo", "2d");
+      await expect(mapa.getByTestId("mapa-2d")).toBeVisible();
+      await expect(mapa).toContainText("mapa em 2D neste navegador");
+      await mapa.getByRole("button", { name: "CareFlow", exact: true }).click();
+      await expect(mapa.getByRole("article", { name: "CareFlow", exact: true })).toBeVisible();
+    });
+  });
 
   // spec 0001 CA-11
   test.fixme("a biblioteca 3D só carrega em /ecossistema (window.__THREE__)", () => {});

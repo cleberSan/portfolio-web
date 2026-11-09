@@ -1,12 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { fundoDaRegiao } from "@/components/ecossistema/cores";
+import { Experiencia } from "@/components/ecossistema/experiencia";
+import { caminhoDoEvento, detalheDoEvento } from "@/components/ecossistema/linha-do-tempo";
 import { ExternalLink } from "@/components/external-link";
 import { PageHeader } from "@/components/page-header";
 import { SmartLink } from "@/components/smart-link";
 import { TagList } from "@/components/tag-list";
 import { buildRespostas, nomeDoAssistente, saudacao } from "@/content/ecossistema/assistente";
-import { nos } from "@/content/ecossistema/modelo";
 import { regioes } from "@/content/ecossistema/regioes";
 import { buildReproducoes, resumoDaGravacao } from "@/content/ecossistema/reproducoes";
 import { pageMetadata } from "@/lib/metadata";
@@ -62,6 +63,8 @@ export default function EcossistemaPage() {
           . Todos os dados são sintéticos.
         </p>
       </div>
+
+      <Experiencia regioes={regioes} reproducoes={reproducoes} />
 
       <section aria-labelledby="regioes" className="space-y-6">
         <h2 id="regioes" className="text-2xl font-semibold tracking-tight">
@@ -145,13 +148,7 @@ export default function EcossistemaPage() {
                       <li key={index} className="grid gap-x-3 sm:grid-cols-[7rem_1fr]">
                         <span className="text-muted">{evento.marca}</span>
                         <span className="break-words">
-                          {nos[evento.origem].nome}
-                          {evento.origem !== evento.destino
-                            ? ` → ${evento.viaBroker ? "RabbitMQ → " : ""}${nos[evento.destino].nome}`
-                            : ""}
-                          : {evento.operacao}
-                          {evento.duracao ? ` (${evento.duracao})` : ""}
-                          {evento.portao ? " · espera o OK do Cleber" : ""}
+                          {caminhoDoEvento(evento)}: {detalheDoEvento(evento)}
                         </span>
                       </li>
                     ))}

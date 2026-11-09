@@ -99,6 +99,11 @@ body {
   border-radius: 2px;
 }
 
+/* O monitor de /ecossistema é escuro nos dois temas: o foco usa a cor clara dele. */
+.monitor :focus-visible {
+  outline-color: var(--monitor-fg);
+}
+
 /* Quadriculado discreto de sala de controle, que some nas bordas. */
 .control-grid {
   background-image:
