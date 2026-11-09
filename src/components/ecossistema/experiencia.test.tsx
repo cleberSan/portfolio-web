@@ -489,6 +489,6 @@ describe("experiência do ecossistema", () => {
     expect(criarCena).not.toHaveBeenCalled();
   });
 
-  // spec 0001 CA-10: a suspensão da renderização é da cena 3D (cena.test.ts, tarefa T07).
-  it.todo("aba oculta ou cena fora da tela suspende a renderização");
+  // A suspensão com a aba oculta ou a cena fora da tela (CA-10) é testada no laço de quadros da
+  // cena, em cena/ciclo.test.ts.
 });

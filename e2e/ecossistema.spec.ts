@@ -1,10 +1,12 @@
 import AxeBuilder from "@axe-core/playwright";
+import type { Page } from "@playwright/test";
 import { expect, test } from "./fixtures";
 
-// Esqueleto da spec 0001 (docs/specs/0001-ecossistema-em-3d): cada teste ganha corpo na tarefa que
-// cobre o critério, depois do OK da spec. Por padrão os testes usam movimento reduzido; só o de
-// CA-04 liga a animação, para não pesar o CI com WebGL por software.
+// Testes da spec 0001 (docs/specs/0001-ecossistema-em-3d). Por padrão usam movimento reduzido, que
+// mostra o mapa 2D; só os da cena 3D ligam a animação, para não pesar o CI com WebGL por software.
 test.describe("Ecossistema em 3D", () => {
+  test.use({ reducedMotion: "reduce" });
+
   test.describe("sem JavaScript", () => {
     test.use({ javaScriptEnabled: false });
 
@@ -43,8 +45,101 @@ test.describe("Ecossistema em 3D", () => {
     });
   });
 
-  // spec 0001 CA-04
-  test.fixme("com WebGL e movimento permitido, carrega a cena e anima", () => {});
+  test.describe("com WebGL e movimento permitido", () => {
+    test.use({ reducedMotion: "no-preference" });
+
+    async function abrirCena(page: Page) {
+      await page.goto("/ecossistema");
+      const mapa = page.getByRole("region", { name: "Mapa do ecossistema" });
+      await expect(mapa).toHaveAttribute("data-modo", "3d");
+      const canvas = mapa.getByTestId("palco-3d").locator("canvas");
+      await expect(canvas).toBeVisible();
+      // Com a cena pronta, o mapa 2D sai da tela.
+      await expect(mapa.getByTestId("mapa-2d")).toHaveCount(0);
+      return { mapa, canvas };
+    }
+
+    // spec 0001 CA-04, CA-07
+    test("carrega a cena, anima e para na pausa", async ({ page }) => {
+      // Arrange
+      const { mapa, canvas } = await abrirCena(page);
+      await expect(mapa).toHaveAttribute("data-estado", "animando");
+
+      // Act + Assert: o cérebro gira sozinho.
+      const primeiro = await canvas.screenshot();
+      await page.waitForTimeout(600);
+      expect(Buffer.compare(primeiro, await canvas.screenshot())).not.toBe(0);
+
+      // Act
+      await mapa.getByRole("button", { name: "Pausar" }).click();
+
+      // Assert: parado, nenhum quadro novo.
+      await expect(mapa).toHaveAttribute("data-estado", "pausado");
+      await page.waitForTimeout(300);
+      const parado = await canvas.screenshot();
+      await page.waitForTimeout(600);
+      expect(Buffer.compare(parado, await canvas.screenshot())).toBe(0);
+    });
+
+    // spec 0001 CA-05
+    test("clicar numa região da cena abre o cartão dela", async ({ page }) => {
+      // Arrange: pausada logo de início, a cena quase não girou.
+      const { mapa, canvas } = await abrirCena(page);
+      await mapa.getByRole("button", { name: "Pausar" }).click();
+      const caixa = await canvas.boundingBox();
+      if (!caixa) {
+        throw new Error("canvas sem caixa");
+      }
+
+      // Act: o hemisfério esquerdo é o CareFlow.
+      await canvas.click({ position: { x: caixa.width * 0.34, y: caixa.height * 0.5 } });
+
+      // Assert
+      await expect(mapa.getByRole("button", { name: "CareFlow", exact: true })).toHaveAttribute(
+        "aria-pressed",
+        "true",
+      );
+      await expect(mapa.getByRole("article", { name: "CareFlow", exact: true })).toBeVisible();
+    });
+
+    // spec 0001 CA-09
+    test("se o WebGL cair, troca para o mapa 2D sem erro no console", async ({ page }) => {
+      // Arrange
+      const { mapa } = await abrirCena(page);
+
+      // Act
+      await page.evaluate(() => {
+        const canvas = document.querySelector<HTMLCanvasElement>('[data-testid="palco-3d"] canvas');
+        const contexto = canvas?.getContext("webgl2") ?? canvas?.getContext("webgl");
+        contexto?.getExtension("WEBGL_lose_context")?.loseContext();
+      });
+
+      // Assert (o fixture falha o teste se houver erro de console)
+      await expect(mapa).toHaveAttribute("data-modo", "2d");
+      await expect(mapa.getByTestId("mapa-2d")).toBeVisible();
+      await expect(mapa.getByTestId("palco-3d")).toHaveCount(0);
+    });
+
+    // spec 0001 CA-11
+    test("a biblioteca 3D só carrega em /ecossistema", async ({ page }) => {
+      for (const rota of ["/", "/projetos"]) {
+        // Act
+        await page.goto(rota);
+        await page.waitForLoadState("networkidle");
+
+        // Assert
+        expect(await page.evaluate(() => "__THREE__" in window), rota).toBe(false);
+      }
+
+      // Act
+      await abrirCena(page);
+
+      // Assert
+      expect(
+        await page.evaluate(() => (window as Window & { __THREE__?: string }).__THREE__),
+      ).toMatch(/^\d+$/);
+    });
+  });
 
   // spec 0001 CA-05
   test("por teclado, escolhe uma região e abre o cartão dela", async ({ page }) => {
@@ -162,6 +257,8 @@ test.describe("Ecossistema em 3D", () => {
   });
 
   test.describe("sem WebGL", () => {
+    test.use({ reducedMotion: "no-preference" });
+
     test.beforeEach(async ({ page }) => {
       await page.addInitScript(() => {
         const original = HTMLCanvasElement.prototype.getContext;
@@ -191,9 +288,6 @@ test.describe("Ecossistema em 3D", () => {
       await expect(mapa.getByRole("article", { name: "CareFlow", exact: true })).toBeVisible();
     });
   });
-
-  // spec 0001 CA-11
-  test.fixme("a biblioteca 3D só carrega em /ecossistema (window.__THREE__)", () => {});
 
   // spec 0001 CA-20
   test.fixme("toda requisição da página é da própria origem", () => {});

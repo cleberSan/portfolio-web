@@ -23,8 +23,9 @@ import { Mapa2D } from "./mapa-2d";
 import { LinkDoMonitor } from "./link-do-monitor";
 import { Registro } from "./registro";
 
-/** A cena 3D chega na tarefa T07 da spec 0001; até lá, quem tem WebGL também vê o mapa 2D. */
-const carregarCenaPadrao: CarregarCena = () => Promise.reject(new Error("cena 3D indisponível"));
+/** O three só é baixado aqui, por import dinâmico, e só quando o modo é 3D (CA-11). */
+const carregarCenaPadrao: CarregarCena = () =>
+  import("./cena/cena").then((modulo) => modulo.criarCena);
 
 const semAssinatura = () => () => {};
 const noCliente = () => true;

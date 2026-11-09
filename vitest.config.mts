@@ -27,6 +27,9 @@ export default defineConfig({
         "src/app/**/opengraph-image.tsx",
         "src/app/**/opengraph-image/route.tsx",
         "src/lib/site-og-image.tsx",
+        // Cena 3D de /ecossistema: precisa de WebGL, que o jsdom não tem. Coberta pelos testes
+        // E2E (spec 0001, CA-04 e CA-09); geometria, sinais e laço têm teste de unidade.
+        "src/components/ecossistema/cena/cena.ts",
       ],
       reporter: ["text", "lcov", "cobertura"],
       thresholds: { lines: 80, branches: 80, functions: 80, statements: 80 },
