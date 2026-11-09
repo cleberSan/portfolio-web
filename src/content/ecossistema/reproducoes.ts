@@ -36,6 +36,17 @@ export function instanteMs(iso: string): number {
   return Date.parse(semFracao) + Number(`0.${fracao || "0"}`) * 1000;
 }
 
+const dataPorExtenso = new Intl.DateTimeFormat("pt-BR", { dateStyle: "long", timeZone: "UTC" });
+
+/** Data por extenso, commit curto e link da gravação do CI, para o aviso da página e o Sinapse. */
+export function resumoDaGravacao(): { data: string; commit: string; href?: string } {
+  return {
+    data: dataPorExtenso.format(new Date(recording.recordedAt)),
+    commit: recording.commit.slice(0, 8),
+    href: commitUrl(recording.commit),
+  };
+}
+
 const segundos = new Intl.NumberFormat("pt-BR", {
   minimumFractionDigits: 3,
   maximumFractionDigits: 3,

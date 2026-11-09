@@ -10,7 +10,13 @@ export type HomeText = {
   statement: string;
   topologyCaption: string;
   intro: (years: number, sectors: string) => string;
-  cta: { cases: string; how: string; whatsapp: string };
+  cta: {
+    cases: string;
+    /** Botão para o mapa do ecossistema, que existe só em português (spec 0001, CA-02). */
+    ecosystem: SectionLink;
+    how: string;
+    whatsapp: string;
+  };
   indicators: {
     years: (years: number) => string;
     yearsLabel: string;
@@ -51,7 +57,12 @@ export const homeText: Record<Locale, HomeText> = {
       "CareFlow, meu projeto vitrine · cada serviço com o próprio banco, eventos com Outbox e Inbox",
     intro: (years, sectors) =>
       `Há ${years} anos construo sistemas críticos e escaláveis em ${sectors}: backend resiliente em .NET, mensageria, frontends modernos e observabilidade de ponta a ponta.`,
-    cta: { cases: "Ver os cases", how: "Como eu trabalho", whatsapp: "Falar no WhatsApp" },
+    cta: {
+      cases: "Ver os cases",
+      ecosystem: { href: "/ecossistema", label: "Explorar o ecossistema" },
+      how: "Como eu trabalho",
+      whatsapp: "Falar no WhatsApp",
+    },
     indicators: {
       years: (years) => `${years} anos`,
       yearsLabel: "construindo software que roda em produção",
@@ -119,7 +130,16 @@ export const homeText: Record<Locale, HomeText> = {
       "CareFlow, my flagship project · each service with its own database, events with Outbox and Inbox",
     intro: (years, sectors) =>
       `For ${years} years I've been building critical, scalable systems in ${sectors}: resilient .NET backends, messaging, modern frontends and end-to-end observability.`,
-    cta: { cases: "See the cases", how: "How I work", whatsapp: "Message me on WhatsApp" },
+    cta: {
+      cases: "See the cases",
+      ecosystem: {
+        href: "/ecossistema",
+        label: "Explore the ecosystem (in Portuguese)",
+        hrefLang: inPortuguese,
+      },
+      how: "How I work",
+      whatsapp: "Message me on WhatsApp",
+    },
     indicators: {
       years: (years) => `${years} years`,
       yearsLabel: "building software that runs in production",

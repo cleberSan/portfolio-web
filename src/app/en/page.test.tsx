@@ -109,6 +109,17 @@ describe("EnglishHome", () => {
     );
   });
 
+  // spec 0001 CA-02
+  it("leva ao mapa do ecossistema, avisando que a página é em português", () => {
+    // Act
+    render(<EnglishHome />);
+
+    // Assert
+    const link = screen.getByRole("link", { name: "Explore the ecosystem (in Portuguese)" });
+    expect(link).toHaveAttribute("href", "/ecossistema");
+    expect(link).toHaveAttribute("hreflang", "pt-BR");
+  });
+
   it("não fala em busca de vaga e não publica e-mail", () => {
     // Act
     const { container } = render(<EnglishHome />);

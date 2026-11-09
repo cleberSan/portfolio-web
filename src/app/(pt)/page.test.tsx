@@ -47,6 +47,18 @@ describe("Home", () => {
     );
   });
 
+  // spec 0001 CA-02
+  it("leva ao mapa do ecossistema a partir do topo", () => {
+    // Act
+    render(<Home />);
+
+    // Assert
+    expect(screen.getByRole("link", { name: "Explorar o ecossistema" })).toHaveAttribute(
+      "href",
+      "/ecossistema",
+    );
+  });
+
   it("organiza a página nas seções numeradas do menu", () => {
     // Act
     const { container } = render(<Home />);

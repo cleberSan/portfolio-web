@@ -107,6 +107,13 @@ export function HomePage({ locale }: { locale: Locale }) {
             <Link href={`#${text.cases.id}`} className={primaryButton}>
               {text.cta.cases} <span aria-hidden="true">↓</span>
             </Link>
+            <Link
+              href={text.cta.ecosystem.href}
+              hrefLang={text.cta.ecosystem.hrefLang}
+              className={secondaryButton}
+            >
+              {text.cta.ecosystem.label}
+            </Link>
             <Link href={`#${text.about.id}`} className={secondaryButton}>
               {text.cta.how}
             </Link>

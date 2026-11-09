@@ -16,6 +16,7 @@ Construído com Next.js 16, TypeScript e Tailwind CSS. O projeto vitrine é o [C
 | `/projetos/careflow`        | Arquitetura, princípios e roadmap do CareFlow               |
 | `/projetos/careflow/painel` | Painel de Privacidade e Resiliência (gravação real)         |
 | `/projetos/lojinha-da-lua`  | Estudo de caso do site da Lojinha Da Lua, uma loja real     |
+| `/ecossistema`              | Mapa 3D dos projetos e o assistente Sinapse (gravações)     |
 | `/diario`                   | Diário de bordo em MDX, um post por fase                    |
 | `/stack`                    | Tecnologias, com links para onde aparecem em código público |
 | `/sobre`                    | Experiência, forma de trabalho e contato                    |
@@ -28,6 +29,7 @@ Construído com Next.js 16, TypeScript e Tailwind CSS. O projeto vitrine é o [C
 - Testes de unidade com Vitest (mínimo de 80% de cobertura no CI) e E2E com Playwright em desktop e mobile, incluindo axe (WCAG 2.2 AA) nos temas claro e escuro.
 - SEO: metadados e Open Graph por página, imagens Open Graph geradas no build, sitemap, robots e dados estruturados (schema.org).
 - Português e inglês: um layout raiz por idioma, seletor só com links e `hreflang` em cada página traduzida ([ADR-0006](docs/adr/0006-versao-em-ingles.md)).
+- `/ecossistema`: three.js num pedaço próprio de 134 KB comprimido, baixado só nessa rota; sem WebGL, com movimento reduzido ou sem JavaScript, a mesma informação aparece em 2D e em texto. O Sinapse responde com textos escritos antes e revisados, sem enviar nada para fora do navegador; a voz só lê as respostas e começa desligada ([ADR-0009](docs/adr/0009-ecossistema-3d-com-three-e-respostas-gravadas.md)).
 
 ## Publicação
 
@@ -38,6 +40,7 @@ Hospedado na Vercel: merge no `main` publica em produção e cada PR ganha um pr
 - [x] **Fase 0:** padrões do repositório, CI com qualidade e segurança, cabeçalhos de segurança, ADRs
 - [x] **Fase 1:** home, sobre, stack, diário de bordo em MDX, SEO, acessibilidade e testes E2E
 - [x] **Fase 6:** Painel de Privacidade e Resiliência, reproduzindo a gravação do CI do CareFlow
+- [x] **Ecossistema:** mapa 3D dos projetos com sinais das gravações do CI e o assistente Sinapse ([spec 0001](docs/specs/0001-ecossistema-em-3d/spec.md))
 
 ## Decisões
 

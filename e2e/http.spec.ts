@@ -18,6 +18,35 @@ test.describe("cabeçalhos de segurança", () => {
     expect(headers["x-frame-options"]).toBe("DENY");
     expect(headers["x-powered-by"]).toBeUndefined();
   });
+
+  // spec 0001 CA-20
+  test("/ecossistema tem os mesmos cabeçalhos de segurança da home, sem microfone", async ({
+    request,
+  }) => {
+    // Arrange
+    const nomes = [
+      "content-security-policy",
+      "strict-transport-security",
+      "x-content-type-options",
+      "x-frame-options",
+      "referrer-policy",
+      "permissions-policy",
+      "cross-origin-opener-policy",
+    ];
+    const daHome = (await request.get("/")).headers();
+
+    // Act
+    const response = await request.get("/ecossistema");
+    const headers = response.headers();
+
+    // Assert
+    expect(response.status()).toBe(200);
+    for (const nome of nomes) {
+      expect(headers[nome], nome).toBeTruthy();
+      expect(headers[nome], nome).toBe(daHome[nome]);
+    }
+    expect(headers["permissions-policy"]).toContain("microphone=()");
+  });
 });
 
 test.describe("páginas inexistentes", () => {
