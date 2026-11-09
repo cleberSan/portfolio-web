@@ -14,7 +14,8 @@ concurrency:
 
 env:
   # Minor destes pacotes muda o que o site renderiza e fica para revisão manual; patch passa.
-  FRAMEWORK: ^(next|@next/.+|eslint-config-next|react|react-dom|tailwindcss|@tailwindcss/.+)$
+  # O three (0.x) costuma mudar API em minor: a cena de /ecossistema é conferida no preview (ADR-0009).
+  FRAMEWORK: ^(next|@next/.+|eslint-config-next|react|react-dom|tailwindcss|@tailwindcss/.+|three|@types/three)$
 
 jobs:
   decidir:
