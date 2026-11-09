@@ -15,6 +15,21 @@
   --ok: #15803d;
   --warn: #92400e;
   --grid-line: rgb(14 116 144 / 0.08);
+
+  /*
+   * Tela do monitor de /ecossistema (spec 0001): escura nos dois temas, porque o brilho aditivo da
+   * cena some em fundo claro. As cores de região são para usar sobre --monitor-bg e nunca são o
+   * único sinal: toda região tem rótulo.
+   */
+  --monitor-bg: #050b14;
+  --monitor-fg: #dbe6f3;
+  --monitor-muted: #9fb0c5;
+  --monitor-border: #23354f;
+  --regiao-careflow: #67e8f9;
+  --regiao-agentes: #c4b5fd;
+  --regiao-portfolio: #93c5fd;
+  --regiao-lojinha: #fcd34d;
+  --regiao-claude-works: #86efac;
 }
 
 @theme inline {
@@ -26,6 +41,15 @@
   --color-surface: var(--surface);
   --color-ok: var(--ok);
   --color-warn: var(--warn);
+  --color-monitor: var(--monitor-bg);
+  --color-monitor-fg: var(--monitor-fg);
+  --color-monitor-muted: var(--monitor-muted);
+  --color-monitor-border: var(--monitor-border);
+  --color-regiao-careflow: var(--regiao-careflow);
+  --color-regiao-agentes: var(--regiao-agentes);
+  --color-regiao-portfolio: var(--regiao-portfolio);
+  --color-regiao-lojinha: var(--regiao-lojinha);
+  --color-regiao-claude-works: var(--regiao-claude-works);
   --font-sans: var(--font-plex-sans);
   --font-mono: var(--font-plex-mono);
 }

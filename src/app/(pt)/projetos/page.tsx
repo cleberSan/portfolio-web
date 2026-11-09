@@ -58,6 +58,20 @@ export default function ProjetosPage() {
             <p className="font-mono text-sm">No ar · {lojinha.stack}</p>
           </article>
         </li>
+        <li>
+          <article className="border-border bg-surface space-y-4 rounded-xl border p-6">
+            <h2 className="text-2xl font-semibold tracking-tight">
+              <Link href="/ecossistema" className="hover:underline">
+                Ecossistema
+              </Link>
+            </h2>
+            <p className="text-muted leading-relaxed">
+              Os projetos, os agentes que trabalham neles e a base de decisões num mapa em 3D, com
+              execuções gravadas pelo CI e um assistente que responde com fonte.
+            </p>
+            <p className="font-mono text-sm">Mapa interativo · three.js</p>
+          </article>
+        </li>
       </ul>
     </div>
   );

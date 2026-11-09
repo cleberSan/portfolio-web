@@ -37,6 +37,18 @@ describe("ProjetosPage", () => {
     expect(screen.getByText(`No ar · ${lojinha.stack}`)).toBeInTheDocument();
   });
 
+  // spec 0001 CA-02
+  it("leva ao mapa do ecossistema", () => {
+    // Act
+    render(<ProjetosPage />);
+
+    // Assert
+    expect(screen.getByRole("link", { name: "Ecossistema" })).toHaveAttribute(
+      "href",
+      "/ecossistema",
+    );
+  });
+
   it("usa /projetos como URL canônica", () => {
     // Assert
     expect(metadata.alternates?.canonical).toBe("/projetos");

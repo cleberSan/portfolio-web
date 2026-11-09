@@ -7,6 +7,7 @@ import {
   eventosDaFase,
   eventosDoTrace,
   instanteMs,
+  resumoDaGravacao,
 } from "./reproducoes";
 
 function span(partial: Partial<Span> & Pick<Span, "spanId" | "service" | "startedAt">): Span {
@@ -221,5 +222,16 @@ describe("buildReproducoes", () => {
     const portoes = eventosDaFase().filter((evento) => evento.portao);
 
     expect(portoes.map((evento) => evento.destino)).toEqual(["cleber", "cleber"]);
+  });
+});
+
+describe("resumoDaGravacao", () => {
+  // spec 0001 CA-03
+  it("dá a data por extenso, o commit curto e o link do commit gravado", () => {
+    expect(resumoDaGravacao()).toEqual({
+      data: "16 de outubro de 2026",
+      commit: recording.commit.slice(0, 8),
+      href: `https://github.com/cleberSan/careflow/commit/${recording.commit}`,
+    });
   });
 });
