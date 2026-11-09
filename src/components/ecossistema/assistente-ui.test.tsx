@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { avisoDePrivacidade, semResposta } from "@/content/ecossistema/assistente";
 import type { RespostaGravada } from "@/content/ecossistema/modelo";
 import { intervaloDaDigitacaoMs } from "@/lib/assistente/digitar";
+import { simularFala, vozInglesa, vozPtBrLocal } from "@/test-utils/fala";
 import { AssistenteUi } from "./assistente-ui";
 
 const respostas: RespostaGravada[] = [
@@ -69,6 +70,7 @@ beforeEach(() => {
 afterEach(() => {
   vi.useRealTimers();
   vi.restoreAllMocks();
+  vi.unstubAllGlobals();
 });
 
 describe("Sinapse na tela", () => {
@@ -244,5 +246,126 @@ describe("Sinapse na tela", () => {
 
     expect(screen.getByTestId("resposta")).toHaveTextContent(respostas[1].texto);
     expect(screen.getByTestId("anuncio")).toHaveTextContent(respostas[1].texto);
+  });
+});
+
+describe("voz do Sinapse", () => {
+  const botaoDeVoz = () => screen.queryByRole("button", { name: "Ler respostas em voz alta" });
+
+  // spec 0001 CA-19
+  it("sem síntese de fala, o controle de voz não aparece", () => {
+    montar();
+
+    expect(botaoDeVoz()).not.toBeInTheDocument();
+  });
+
+  // spec 0001 CA-19
+  it("sem voz em português, o controle não aparece; com a voz chegando depois, aparece", () => {
+    // Arrange
+    const fala = simularFala([vozInglesa]);
+    montar();
+
+    // Assert
+    expect(botaoDeVoz()).not.toBeInTheDocument();
+
+    // Act
+    act(() => fala.trocarVozes([vozInglesa, vozPtBrLocal]));
+
+    // Assert
+    expect(botaoDeVoz()).toBeInTheDocument();
+  });
+
+  // spec 0001 CA-18
+  it("começa desligada: responder não fala nada", () => {
+    // Arrange
+    const fala = simularFala([vozPtBrLocal]);
+    montar();
+
+    // Act
+    fireEvent.click(screen.getByRole("button", { name: "O que é o CareFlow?" }));
+
+    // Assert
+    expect(botaoDeVoz()).toHaveAttribute("aria-pressed", "false");
+    expect(fala.falas).toEqual([]);
+  });
+
+  // spec 0001 CA-18
+  it("ligada, lê só a resposta gravada, nunca o que o visitante digitou", () => {
+    // Arrange
+    const fala = simularFala([vozPtBrLocal]);
+    montar();
+    fireEvent.click(botaoDeVoz()!);
+
+    // Act
+    perguntar("<b>careflow</b> segredo do visitante");
+    perguntar("previsão do tempo amanhã");
+
+    // Assert
+    expect(botaoDeVoz()).toHaveAttribute("aria-pressed", "true");
+    const lido = fala.falas.map(({ texto }) => texto).join(" ");
+    expect(lido).toBe(`${respostas[0].texto} ${semResposta}`);
+    expect(lido).not.toMatch(/segredo|visitante|previsão/);
+  });
+
+  // spec 0001 CA-18
+  it("ligar com uma resposta na tela lê essa resposta; desligar para a leitura", () => {
+    // Arrange
+    const fala = simularFala([vozPtBrLocal]);
+    montar();
+    fireEvent.click(screen.getByRole("button", { name: "Como o CareFlow protege os dados?" }));
+
+    // Act
+    fireEvent.click(botaoDeVoz()!);
+
+    // Assert
+    expect(fala.falas.map(({ texto }) => texto)).toEqual([respostas[1].texto]);
+
+    // Act
+    fala.cancel.mockClear();
+    fireEvent.click(botaoDeVoz()!);
+
+    // Assert
+    expect(fala.cancel).toHaveBeenCalled();
+    expect(botaoDeVoz()).toHaveAttribute("aria-pressed", "false");
+  });
+
+  // spec 0001 CA-18
+  it("a pausa para a voz e, pausada, uma resposta nova não é lida", () => {
+    // Arrange
+    const fala = simularFala([vozPtBrLocal]);
+    const { rerender, aoResponder } = montar();
+    fireEvent.click(botaoDeVoz()!);
+    fala.cancel.mockClear();
+
+    // Act
+    rerender(
+      <AssistenteUi
+        respostas={respostas}
+        sugestoes={["careflow", "privacidade"]}
+        pausado
+        animado
+        aoResponder={aoResponder}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "O que é o CareFlow?" }));
+    fireEvent.click(botaoDeVoz()!);
+    fireEvent.click(botaoDeVoz()!);
+
+    // Assert
+    expect(fala.cancel).toHaveBeenCalled();
+    expect(fala.falas).toEqual([]);
+  });
+
+  it("para a voz ao sair da página", () => {
+    // Arrange
+    const fala = simularFala([vozPtBrLocal]);
+    const { unmount } = montar();
+    fala.cancel.mockClear();
+
+    // Act
+    unmount();
+
+    // Assert
+    expect(fala.cancel).toHaveBeenCalledTimes(1);
   });
 });

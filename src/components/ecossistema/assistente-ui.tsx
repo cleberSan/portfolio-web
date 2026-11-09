@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useState, type FormEvent } from "react";
+import { useEffect, useId, useState, useSyncExternalStore, type FormEvent } from "react";
 import {
   avisoDePrivacidade,
   nomeDoAssistente,
@@ -9,6 +9,7 @@ import {
 import type { RespostaGravada } from "@/content/ecossistema/modelo";
 import { buscar, tamanhoMaximoDaPergunta } from "@/lib/assistente/buscar";
 import { intervaloDaDigitacaoMs, proximoCorte } from "@/lib/assistente/digitar";
+import { falar, observarVozes, parar, podeFalar } from "@/lib/voz";
 import { LinkDoMonitor } from "./link-do-monitor";
 
 type Consulta = { pergunta: string; resposta: RespostaGravada | null };
@@ -17,7 +18,7 @@ type AssistenteUiProps = {
   respostas: readonly RespostaGravada[];
   /** Ids das respostas oferecidas como perguntas prontas, na ordem. */
   sugestoes: readonly string[];
-  /** Pausa da página: a digitação para junto com o resto. */
+  /** Pausa da página: a digitação e a voz param junto com o resto. */
   pausado: boolean;
   /** Com movimento reduzido, a resposta aparece inteira de uma vez. */
   animado: boolean;
@@ -32,7 +33,8 @@ const botao =
  * O Sinapse na tela (spec 0001, CA-12 a CA-17). A pergunta é buscada neste navegador entre as
  * respostas gravadas: nada é enviado nem guardado, e o texto do visitante só aparece como texto.
  * A resposta é digitada palavra por palavra (parada na pausa, inteira com movimento reduzido) e
- * anunciada uma vez, completa, aos leitores de tela quando termina.
+ * anunciada uma vez, completa, aos leitores de tela quando termina. A voz (CA-18 e CA-19) começa
+ * desligada, só aparece se o navegador fala português e lê só as respostas gravadas.
  */
 export function AssistenteUi({
   respostas,
@@ -45,6 +47,9 @@ export function AssistenteUi({
   const [pergunta, setPergunta] = useState("");
   const [consulta, setConsulta] = useState<Consulta | null>(null);
   const [mostrados, setMostrados] = useState(0);
+  const vozDisponivel = useSyncExternalStore(observarVozes, podeFalar, () => false);
+  const [vozLigada, setVozLigada] = useState(false);
+  const lendo = vozDisponivel && vozLigada;
 
   const alvo = consulta ? (consulta.resposta?.texto ?? semResposta) : "";
   const terminou = !animado || mostrados >= alvo.length;
@@ -61,9 +66,34 @@ export function AssistenteUi({
     return () => clearTimeout(espera);
   }, [consulta, terminou, pausado, alvo, mostrados]);
 
+  // A pausa da página cala a voz; sair da página também.
+  useEffect(() => {
+    if (pausado) {
+      parar();
+    }
+  }, [pausado]);
+  useEffect(() => parar, []);
+
+  /** Só texto gravado vai para a voz: a resposta ou o aviso de que não há resposta. */
+  const ler = (resposta: RespostaGravada | null) => {
+    if (lendo && !pausado) {
+      falar(resposta?.texto ?? semResposta);
+    }
+  };
+
+  const alternarVoz = () => {
+    if (vozLigada) {
+      parar();
+    } else if (consulta && !pausado) {
+      falar(alvo);
+    }
+    setVozLigada(!vozLigada);
+  };
+
   const consultar = (texto: string, resposta: RespostaGravada | null) => {
     setConsulta({ pergunta: texto, resposta });
     setMostrados(0);
+    ler(resposta);
     if (resposta) {
       aoResponder(resposta);
     }
@@ -94,6 +124,16 @@ export function AssistenteUi({
           {nomeDoAssistente}
         </h3>
         <p className="text-monitor-muted text-xs leading-relaxed">{avisoDePrivacidade}</p>
+        {vozDisponivel ? (
+          <button
+            type="button"
+            aria-pressed={vozLigada}
+            onClick={alternarVoz}
+            className={`${botao} aria-pressed:bg-monitor-fg aria-pressed:text-monitor aria-pressed:border-monitor-fg`}
+          >
+            Ler respostas em voz alta
+          </button>
+        ) : null}
         <ul aria-label="Perguntas sugeridas" className="flex flex-wrap gap-2">
           {prontas.map((resposta) => (
             <li key={resposta.id}>
