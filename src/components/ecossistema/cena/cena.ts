@@ -7,9 +7,11 @@ import {
   Group,
   LineBasicMaterial,
   LineSegments,
+  Matrix4,
   PerspectiveCamera,
   Points,
   PointsMaterial,
+  Ray,
   Raycaster,
   Scene,
   Vector2,
@@ -22,7 +24,14 @@ import {
   type RegiaoId,
 } from "@/content/ecossistema/modelo";
 import { regiaoDoNo } from "../layout";
-import { ancoras, gerarCerebro, pontosNoCelular, pontosNoComputador, semRegiao } from "./cerebro";
+import {
+  ancoras,
+  gerarCerebro,
+  pontosNoCelular,
+  pontosNoComputador,
+  regiaoNoRaio,
+  semRegiao,
+} from "./cerebro";
 import { criarCiclo } from "./ciclo";
 import {
   ligacoesDaReproducao,
@@ -114,7 +123,7 @@ export const criarCena: CriarCena = (container, opcoes) => {
   const cena = new Scene();
   const camera = new PerspectiveCamera(38, 4 / 3, 0.1, 50);
   // Vista de cima e de frente: os dois hemisférios e a fissura, como no mapa 2D.
-  camera.position.set(0, 3.7, 2.8);
+  camera.position.set(0, 3.45, 2.6);
   camera.lookAt(0, 0.1, 0);
   const grupo = new Group();
   cena.add(grupo);
@@ -306,8 +315,9 @@ export const criarCena: CriarCena = (container, opcoes) => {
 
   // Escolha por clique ou toque (CA-05) e giro por arrasto.
   const raycaster = new Raycaster();
-  raycaster.params.Points = { threshold: 0.06 };
   const ponteiro = new Vector2();
+  const inversa = new Matrix4();
+  const raio = new Ray();
   let inicioX = 0;
   let rotacaoNoInicio = 0;
   let moveu = false;
@@ -319,13 +329,15 @@ export const criarCena: CriarCena = (container, opcoes) => {
       -((evento.clientY - caixa.top) / caixa.height) * 2 + 1,
     );
     raycaster.setFromCamera(ponteiro, camera);
-    // O ponto mais próximo que pertence a uma região; os neutros não escolhem nada.
-    for (const { index } of raycaster.intersectObject(pontos)) {
-      const regiao = index === undefined ? semRegiao : cerebro.regioes[index];
-      if (regiao !== semRegiao) {
-        opcoes.aoSelecionar(regiaoIds[regiao]);
-        return;
-      }
+    // O raio entra no espaço do cérebro, desfazendo o giro, e a região vem do mapa 2D embaixo.
+    grupo.updateMatrixWorld();
+    raio.copy(raycaster.ray).applyMatrix4(inversa.copy(grupo.matrixWorld).invert());
+    const regiao = regiaoNoRaio(
+      [raio.origin.x, raio.origin.y, raio.origin.z],
+      [raio.direction.x, raio.direction.y, raio.direction.z],
+    );
+    if (regiao) {
+      opcoes.aoSelecionar(regiao);
     }
   };
   const aoPressionar = (evento: PointerEvent) => {

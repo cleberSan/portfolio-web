@@ -78,6 +78,16 @@ export function paraExibicao(x: number): number {
   return centroExibido + (x - h.cx) * estreitamento;
 }
 
+/** Volta da posição desenhada para a do mapa: o inverso de `paraExibicao`. */
+export function deExibicao(x: number): number {
+  if (x === 0) {
+    return 0;
+  }
+  const h = hemisferios3d[x < 0 ? 0 : 1];
+  const centroExibido = Math.sign(h.cx) * (folgaDaFissura + h.rx * estreitamento);
+  return h.cx + (x - centroExibido) / estreitamento;
+}
+
 /** Mais baixo na frente e atrás, como os polos do cérebro. */
 function fatorDeAltura(dz: number): number {
   return 1 - 0.22 * dz * dz;
@@ -200,4 +210,25 @@ export function ancoras(): Readonly<Record<NoId, Vetor>> {
     resultado[id] = [paraExibicao(x), (altura ?? alturaDoPortao) + folga, z];
   }
   return resultado;
+}
+
+/**
+ * Região sob um raio (em coordenadas do cérebro, já sem o giro), para o clique e o toque. Acha onde
+ * o raio cruza a superfície por aproximações sucessivas da altura e lê a região do mapa 2D embaixo.
+ * Não depende de acertar um ponto da nuvem, que tem vãos entre as dobras.
+ */
+export function regiaoNoRaio(origem: Vetor, direcao: Vetor): RegiaoId | null {
+  if (direcao[1] >= 0) {
+    return null;
+  }
+  let altura = alturaDoHemisferio;
+  let x = 0;
+  let z = 0;
+  for (let passo = 0; passo < 6; passo += 1) {
+    const t = (altura - origem[1]) / direcao[1];
+    x = deExibicao(origem[0] + t * direcao[0]);
+    z = origem[2] + t * direcao[2];
+    altura = alturaDaSuperficie(x, z) ?? 0;
+  }
+  return alturaDaSuperficie(x, z) === null ? null : regiaoEmbaixo(x, z);
 }

@@ -5,6 +5,7 @@ import {
   aleatorio,
   alturaDaSuperficie,
   ancoras,
+  deExibicao,
   gerarCerebro,
   paraCena,
   paraExibicao,
@@ -12,6 +13,7 @@ import {
   pontosNoCelular,
   pontosNoComputador,
   regiaoEmbaixo,
+  regiaoNoRaio,
   semRegiao,
 } from "./cerebro";
 
@@ -104,6 +106,13 @@ describe("conversão entre mapa e cena", () => {
     expect(paraExibicao(0.5)).toBeGreaterThan(0);
   });
 
+  it("volta da posição desenhada para a do mapa", () => {
+    for (const x of [-1.7, -0.95, -0.2, 0.3, 1.1, 1.8]) {
+      expect(deExibicao(paraExibicao(x))).toBeCloseTo(x);
+    }
+    expect(deExibicao(0)).toBe(0);
+  });
+
   it("dá altura só dentro dos hemisférios", () => {
     expect(alturaDaSuperficie(-0.95, 0)).toBeCloseTo(0.8);
     expect(alturaDaSuperficie(0, -1.2)).toBeNull();
@@ -133,5 +142,36 @@ describe("aleatorio", () => {
     expect(valores).toEqual(Array.from({ length: 50 }, () => b()));
     expect(Math.min(...valores)).toBeGreaterThanOrEqual(0);
     expect(Math.max(...valores)).toBeLessThan(1);
+  });
+});
+
+describe("regiaoNoRaio", () => {
+  /** Raio que desce em linha reta sobre o ponto (x, z) do mapa 2D. */
+  const deCima = (mapa: { x: number; y: number }) => {
+    const { x, z } = paraCena(mapa);
+    return regiaoNoRaio([paraExibicao(x), 5, z], [0, -1, 0]);
+  };
+
+  // spec 0001 CA-05
+  it("acha a região do mapa sob o clique, mesmo entre as dobras da nuvem", () => {
+    expect(deCima(posicoes.agenda)).toBe("careflow");
+    expect(deCima(posicoes.orquestrador)).toBe("agentes");
+    expect(deCima(posicoes.site)).toBe("portfolio");
+    expect(deCima(posicoes.loja)).toBe("lojinha");
+    expect(deCima(posicoes.base)).toBe("claude-works");
+  });
+
+  it("acompanha a altura da superfície num raio inclinado", () => {
+    // Câmera da cena olhando para o centro do hemisfério esquerdo.
+    const alvo = [paraExibicao(-0.95), 0.8, 0] as const;
+    const origem = [0, 3.45, 2.6] as const;
+    const direcao = [alvo[0] - origem[0], alvo[1] - origem[1], alvo[2] - origem[2]] as const;
+
+    expect(regiaoNoRaio(origem, direcao)).toBe("careflow");
+  });
+
+  it("não acha nada fora do cérebro nem com o raio subindo", () => {
+    expect(regiaoNoRaio([0, 5, -1.3], [0, -1, 0])).toBeNull();
+    expect(regiaoNoRaio([-0.6, 5, 0], [0, 1, 0])).toBeNull();
   });
 });
